@@ -1,0 +1,21 @@
+{% extends "sqladmin/create.html" %}
+
+{% block additional_create_fields %}
+<div class="alert alert-info" role="status">
+  <h4 class="alert-title">Остаток и автовыдача</h4>
+  <p>Каждая сохранённая единица склада выдаётся одному покупателю и затем списывается. Поле ниже — единый текст результата, без отдельных полей для логина и пароля.</p>
+  <ul class="mb-2">
+    <li>один аккаунт или один ключ — одна единица склада;</li>
+    <li>для нескольких аккаунтов нажмите внизу «Добавить много аккаунтов» и загрузите список одним полем;</li>
+    <li>логин, пароль и инструкцию для одного аккаунта вставляйте в большое текстовое поле несколькими строками.</li>
+  </ul>
+  <p class="mb-0">Переключатель «Выдавать без ограничения» оставляйте выключенным для аккаунтов и ключей. Он нужен для одного текста или ссылки, которые можно отправлять каждому покупателю.</p>
+</div>
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="announce_arrival" id="announce_arrival" value="1"><label class="form-check-label" for="announce_arrival"><b>📢 Опубликовать пост о поступлении в канал</b><br><span class="text-muted">В канал придёт пост «Пополнение» с остатком, ценой и кнопкой «Перейти к товару».</span></label></div>
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="notify_all" id="notify_all" value="1"><label class="form-check-label" for="notify_all"><b>🔔 Уведомить всех пользователей</b><br><span class="text-muted">Если включено, сообщение о поступлении получат все зарегистрированные пользователи. Если выключено — только те, кто нажал «Уведомить о поступлении» у этого товара.</span></label></div>
+{% endblock %}
+
+{% block create_form %}
+{{ super() }}
+<div class="mt-3"><a class="btn btn-outline-primary" href="{{ url_for('admin:stock-bulk') }}">Добавить много аккаунтов</a><span class="text-muted ms-2">Загрузить список одним полем и сохранить каждый аккаунт отдельной единицей.</span></div>
+{% endblock %}

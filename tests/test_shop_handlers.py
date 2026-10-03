@@ -1,0 +1,948 @@
+import pytest
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from unittest.mock import patch, AsyncMock, MagicMock
+from sqlalchemy import update
+
+from bot.database.main import Database
+from bot.database.methods.create import add_to_cart, subscribe_to_stock
+from bot.database.methods.lazy_queries import query_goods_search
+from bot.database.methods.read import (
+    get_cart_items, get_cart_count, is_subscribed_to_stock,
+)
+from bot.database.models.main import Categories, PromoCodes
+from bot.handlers.user.balance_and_payment import buy_item_callback_handler
+from bot.handlers.user.cart import (
+    cart_qty_handler, view_cart_handler, cart_checkout_confirm_handler,
+    _show_cart, RECEIPT_MAX_BUTTONS,
+)
+from bot.handlers.user.shop_and_goods import (
+    router, shop_callback_handler, navigate_categories, navigate_goods,
+    items_list_callback_handler, item_info_callback_handler,
+    search_item_info_handler, shop_search_handler, receive_search_query_handler,
+    subscribe_stock_handler, unsubscribe_stock_handler,
+    apply_promo_handler, promo_code_text_handler, back_to_item_handler,
+    bought_items_callback_handler, bought_item_info_callback_handler,
+    _render_item_page,
+)
+from bot.states import ShopStates
+
+
+def _screen_call(call):
+    """Return the most recent screen call, whether it is text or a photo caption."""
+    if call.message.edit_text.call_args is not None:
+        return call.message.edit_text.call_args
+    photo_call = call.message.bot.send_photo.call_args
+    assert photo_call is not None, "the handler did not render a screen"
+    return photo_call
+
+
+def _message_screen_call(message):
+    """Return a screen response whether it was text or a photo caption."""
+    if message.answer.call_args is not None:
+        return message.answer.call_args
+    photo_call = message.answer_photo.call_args
+    assert photo_call is not None, "the handler did not render a screen"
+    return photo_call
+
+
+class TestCartHandlers:
+    async def test_stepper_increments_and_rerenders(self, make_callback_query, fsm_context,
+                                                    user_factory, item_factory):
+
+        await user_factory(telegram_id=620001, balance=1000)
+        await item_factory(name="StepItem", price=100, values=[("v", False)])
+        await add_to_cart(620001, "StepItem")
+        cid = (await get_cart_items(620001))[0]["id"]
+
+        call = make_callback_query(data=f"cart_qty:{cid}:1", user_id=620001)
+        await cart_qty_handler(call, fsm_context)
+
+        assert await get_cart_count(620001) == 2
+        call.message.edit_text.assert_called()          # cart re-rendered
+        text = call.message.edit_text.call_args[0][0]
+        assert "×2" in text                              # quantity shown to the user
+
+    async def test_stepper_down_to_zero_removes_line(self, make_callback_query, fsm_context,
+                                                     user_factory, item_factory):
+
+        await user_factory(telegram_id=620002, balance=1000)
+        await item_factory(name="DropItem", price=100, values=[("v", False)])
+        await add_to_cart(620002, "DropItem")
+        cid = (await get_cart_items(620002))[0]["id"]
+
+        call = make_callback_query(data=f"cart_qty:{cid}:-1", user_id=620002)
+        await cart_qty_handler(call, fsm_context)
+
+        assert await get_cart_items(620002) == []
+        # Re-rendered as an empty cart: no stepper buttons left.
+        markup = call.message.edit_text.call_args[1]["reply_markup"]
+        cbs = [b.callback_data for row in markup.inline_keyboard for b in row]
+        assert not any(c and c.startswith("cart_qty:") for c in cbs)
+
+    async def test_cart_total_multiplies_by_quantity(self, make_callback_query, fsm_context,
+                                                     user_factory, item_factory):
+
+        await user_factory(telegram_id=620003, balance=1000)
+        await item_factory(name="TotalItem", price=25, values=[("v", False)])
+        await add_to_cart(620003, "TotalItem", quantity=4)
+
+        call = make_callback_query(data="cart", user_id=620003)
+        await view_cart_handler(call, fsm_context)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert "100" in text          # 25 * 4, not 25
+        assert "×4" in text
+
+    async def test_cart_warns_when_a_line_promo_stopped_applying(self, make_callback_query,
+                                                                 fsm_context, user_factory,
+                                                                 item_factory):
+
+        await user_factory(telegram_id=620010, balance=1000)
+        await item_factory(name="WarnItem", price=100, values=[("v", False)])
+        async with Database().session() as s:
+            s.add(PromoCodes(
+                code="WARNEXP", discount_type="percent", discount_value=Decimal("10"),
+                scope="global", is_active=True,
+                expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            ))
+        await add_to_cart(620010, "WarnItem", promo_code="WARNEXP")
+
+        call = make_callback_query(data="cart", user_id=620010)
+        await view_cart_handler(call, fsm_context)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert "⚠️" in text            # the line is flagged, not silently full-price
+        assert "WARNEXP" in text        # and it names the promo to remove
+        assert "100" in text            # charged at full price, no fake discount
+
+    async def test_stepper_rejects_other_users_line(self, make_callback_query, fsm_context,
+                                                    user_factory, item_factory):
+
+        await user_factory(telegram_id=620004, balance=1000)
+        await user_factory(telegram_id=620005, balance=1000)
+        await item_factory(name="MineItem", price=10, values=[("v", False)])
+        await add_to_cart(620004, "MineItem", quantity=2)
+        cid = (await get_cart_items(620004))[0]["id"]
+
+        call = make_callback_query(data=f"cart_qty:{cid}:1", user_id=620005)
+        await cart_qty_handler(call, fsm_context)
+
+        assert await get_cart_count(620004) == 2    # untouched
+        call.answer.assert_called()
+
+
+class TestBackButtonSurvivesSubFlows:
+    """The card's Back button is gp_/sp_, and both pagers are state-filtered.
+
+    Anything that drops the browsing state leaves that button silently dead.
+    """
+
+    async def test_notify_keeps_the_browsing_state(self, make_callback_query, fsm_context,
+                                                   user_factory, item_factory):
+
+        await user_factory(telegram_id=650001)
+        await item_factory(name="BellItem", price=10, values=[])
+        await fsm_context.update_data(csrf_item="BellItem", item_back_data="sp_0")
+        await fsm_context.set_state(ShopStates.viewing_search_results)
+
+        call = make_callback_query(data="sub_stock", user_id=650001)
+        await subscribe_stock_handler(call, fsm_context)
+
+        assert await fsm_context.get_state() == ShopStates.viewing_search_results
+
+    async def test_promo_then_back_to_item_restores_category_state(self, make_callback_query,
+                                                                   fsm_context, user_factory,
+                                                                   item_factory):
+
+        await user_factory(telegram_id=650002)
+        await item_factory(name="PromoBack", price=10, values=[("v", False)])
+        await fsm_context.update_data(csrf_item="PromoBack", item_back_data="gp_0")
+        await fsm_context.set_state(ShopStates.viewing_goods)
+
+        await apply_promo_handler(make_callback_query(data="apply_promo", user_id=650002), fsm_context)
+        await back_to_item_handler(make_callback_query(data="back_to_item", user_id=650002), fsm_context)
+
+        # navigate_goods is filtered on this; None would make gp_0 a no-op.
+        assert await fsm_context.get_state() == ShopStates.viewing_goods
+
+    async def test_promo_then_back_to_item_restores_search_state(self, make_callback_query,
+                                                                 fsm_context, user_factory,
+                                                                 item_factory):
+
+        await user_factory(telegram_id=650003)
+        await item_factory(name="PromoBackS", price=10, values=[("v", False)])
+        await fsm_context.update_data(csrf_item="PromoBackS", item_back_data="sp_0")
+        await fsm_context.set_state(ShopStates.viewing_search_results)
+
+        await apply_promo_handler(make_callback_query(data="apply_promo", user_id=650003), fsm_context)
+        await back_to_item_handler(make_callback_query(data="back_to_item", user_id=650003), fsm_context)
+
+        assert await fsm_context.get_state() == ShopStates.viewing_search_results
+
+    async def test_applying_a_promo_code_restores_the_browsing_state(self, make_message,
+                                                                     make_callback_query,
+                                                                     fsm_context, user_factory,
+                                                                     item_factory):
+
+        await user_factory(telegram_id=650004)
+        await item_factory(name="PromoTyped", price=10, values=[("v", False)])
+        await fsm_context.update_data(csrf_item="PromoTyped", item_back_data="gp_0")
+        await fsm_context.set_state(ShopStates.viewing_goods)
+
+        await apply_promo_handler(make_callback_query(data="apply_promo", user_id=650004), fsm_context)
+        # An invalid code still has to hand the browsing state back.
+        await promo_code_text_handler(make_message(text="NOSUCHCODE", user_id=650004), fsm_context)
+
+        assert await fsm_context.get_state() == ShopStates.viewing_goods
+
+
+class TestCheckoutReceipt:
+    """A checkout delivers one row per unit; the receipt must not try to render
+    a button for every one of them."""
+
+    async def test_receipt_buttons_are_capped(self, make_callback_query, fsm_context,
+                                              user_factory, item_factory):
+
+        qty = RECEIPT_MAX_BUTTONS + 15
+        await user_factory(telegram_id=640001, balance=100000)
+        await item_factory(name="BulkItem", price=1,
+                           values=[(f"v{i}", False) for i in range(qty)])
+        await add_to_cart(640001, "BulkItem", quantity=qty)
+
+        call = make_callback_query(data="cart_checkout_confirm", user_id=640001)
+        await cart_checkout_confirm_handler(call, fsm_context)
+
+        markup = call.message.edit_text.call_args[1]["reply_markup"]
+        total_buttons = sum(len(row) for row in markup.inline_keyboard)
+        # capped items + "all purchases" + back
+        assert total_buttons == RECEIPT_MAX_BUTTONS + 2
+
+        cbs = [b.callback_data for row in markup.inline_keyboard for b in row]
+        assert "bought_items" in cbs      # overflow defers to the paginated list
+        assert "profile" in cbs
+
+    async def test_repeated_units_are_numbered(self, make_callback_query, fsm_context,
+                                               user_factory, item_factory):
+
+        await user_factory(telegram_id=640002, balance=1000)
+        await item_factory(name="TwinItem", price=10,
+                           values=[("a", False), ("b", False)])
+        await add_to_cart(640002, "TwinItem", quantity=2)
+
+        call = make_callback_query(data="cart_checkout_confirm", user_id=640002)
+        await cart_checkout_confirm_handler(call, fsm_context)
+
+        markup = call.message.edit_text.call_args[1]["reply_markup"]
+        labels = [b.text for row in markup.inline_keyboard for b in row]
+        # Two units of one position must be distinguishable.
+        assert "📦 TwinItem (1)" in labels
+        assert "📦 TwinItem (2)" in labels
+
+    async def test_receipt_state_does_not_store_delivered_secrets(self, make_callback_query,
+                                                                  fsm_context, user_factory,
+                                                                  item_factory):
+
+        await user_factory(telegram_id=640003, balance=1000)
+        await item_factory(name="SecretItem", price=10, values=[("SUPERSECRET", False)])
+        await add_to_cart(640003, "SecretItem")
+
+        call = make_callback_query(data="cart_checkout_confirm", user_id=640003)
+        await cart_checkout_confirm_handler(call, fsm_context)
+
+        stored = (await fsm_context.get_data())["cart_receipt_results"]
+        assert all("value" not in r for r in stored)
+
+
+class TestRestockButtonFlow:
+
+    async def test_subscribe_from_item_card(self, make_callback_query, fsm_context,
+                                            user_factory, item_factory):
+
+        await user_factory(telegram_id=630001)
+        await item_factory(name="EmptyItem", price=10, values=[])   # out of stock
+        await fsm_context.update_data(csrf_item="EmptyItem")
+
+        call = make_callback_query(data="sub_stock", user_id=630001)
+        await subscribe_stock_handler(call, fsm_context)
+
+        assert await is_subscribed_to_stock(630001, "EmptyItem") is True
+
+    async def test_unsubscribe_from_item_card(self, make_callback_query, fsm_context,
+                                              user_factory, item_factory):
+
+        await user_factory(telegram_id=630002)
+        await item_factory(name="EmptyItem2", price=10, values=[])
+        await subscribe_to_stock(630002, "EmptyItem2")
+        await fsm_context.update_data(csrf_item="EmptyItem2")
+
+        call = make_callback_query(data="unsub_stock", user_id=630002)
+        await unsubscribe_stock_handler(call, fsm_context)
+
+        assert await is_subscribed_to_stock(630002, "EmptyItem2") is False
+
+    async def test_subscribe_without_item_in_state(self, make_callback_query, fsm_context,
+                                                   user_factory):
+
+        await user_factory(telegram_id=630003)
+        call = make_callback_query(data="sub_stock", user_id=630003)
+        await subscribe_stock_handler(call, fsm_context)
+
+        call.answer.assert_called_once()
+        assert call.answer.call_args[1].get("show_alert") is True
+
+
+class TestCatalogSearch:
+
+    async def test_prompt_sets_state(self, make_callback_query, fsm_context):
+
+        call = make_callback_query(data="shop_search", user_id=610001)
+        await shop_search_handler(call, fsm_context)
+
+        _screen_call(call)
+        assert await fsm_context.get_state() == ShopStates.waiting_search_query
+
+    async def test_query_renders_results(self, make_message, fsm_context, item_factory):
+
+        await item_factory(name="Netflix Account", price=100, values=[("v", False)])
+        await item_factory(name="Spotify Account", price=50, values=[("v", False)])
+        await item_factory(name="Unrelated", price=10, values=[("v", False)])
+
+        message = make_message(text="Account", user_id=610002)
+        await receive_search_query_handler(message, fsm_context)
+
+        _message_screen_call(message)
+        data = await fsm_context.get_data()
+        assert sorted(data["search_page_items"]) == ["Netflix Account", "Spotify Account"]
+        assert data["search_query"] == "Account"
+        assert await fsm_context.get_state() == ShopStates.viewing_search_results
+
+    async def test_description_only_match_is_found(self, make_message, fsm_context, item_factory):
+        """Proves the OR arm against description, not just name."""
+
+        await item_factory(name="Opaque Name", price=10,
+                           description="a premium gamepass inside", values=[("v", False)])
+
+        message = make_message(text="gamepass", user_id=610003)
+        await receive_search_query_handler(message, fsm_context)
+
+        data = await fsm_context.get_data()
+        assert data["search_page_items"] == ["Opaque Name"]
+
+    async def test_search_is_case_insensitive(self, make_message, fsm_context, item_factory):
+
+        await item_factory(name="UPPERCASE Item", price=10, values=[("v", False)])
+
+        message = make_message(text="uppercase", user_id=610004)
+        await receive_search_query_handler(message, fsm_context)
+
+        data = await fsm_context.get_data()
+        assert data["search_page_items"] == ["UPPERCASE Item"]
+
+    async def test_empty_result(self, make_message, fsm_context, item_factory):
+
+        await item_factory(name="Something", price=10, values=[("v", False)])
+
+        message = make_message(text="nothingmatchesthis", user_id=610005)
+        await receive_search_query_handler(message, fsm_context)
+
+        _args, kwargs = _message_screen_call(message)
+        text = kwargs.get("caption", _args[0] if _args else "")
+        assert "shop.search.empty" in text
+        assert (await fsm_context.get_data()).get("search_page_items") is None
+
+    async def test_too_short_query_stays_in_state(self, make_message, fsm_context):
+
+        await fsm_context.set_state(ShopStates.waiting_search_query)
+        message = make_message(text="a", user_id=610006)
+        await receive_search_query_handler(message, fsm_context)
+
+        _args, kwargs = _message_screen_call(message)
+        text = kwargs.get("caption", _args[0] if _args else "")
+        assert "shop.search.too_short" in text
+        # Still waiting, so the user can just retype.
+        assert await fsm_context.get_state() == ShopStates.waiting_search_query
+
+    async def test_open_item_from_search_sets_back_to_results(self, make_callback_query,
+                                                              fsm_context, item_factory):
+        """Back from a search-opened card must return to the results, not categories."""
+
+        await item_factory(name="FoundItem", price=100, values=[("v", False)])
+        await fsm_context.update_data(search_query="found")
+
+        call = make_callback_query(data="sitm:0:0", user_id=610007)
+        await search_item_info_handler(call, fsm_context)
+
+        data = await fsm_context.get_data()
+        assert data["csrf_item"] == "FoundItem"
+        assert data["item_back_data"] == "sp_0"
+
+    async def test_open_item_bad_index(self, make_callback_query, fsm_context):
+
+        await fsm_context.update_data(search_query="nothingmatches")
+        call = make_callback_query(data="sitm:5:0", user_id=610008)
+        await search_item_info_handler(call, fsm_context)
+
+        call.answer.assert_called_once()
+        assert call.answer.call_args[1].get("show_alert") is True
+
+
+class TestSearchQueryEscaping:
+    """LIKE wildcards typed by a user must be literals, not patterns."""
+
+    async def test_underscore_is_literal(self, item_factory):
+
+        await item_factory(name="a_b", price=10, values=[("v1", False)])
+        await item_factory(name="axb", price=10, values=[("v2", False)])
+
+        assert await query_goods_search("a_b") == ["a_b"]
+
+    async def test_percent_is_literal(self, item_factory):
+
+        await item_factory(name="100% cashback", price=10, values=[("v1", False)])
+        await item_factory(name="plain item", price=10, values=[("v2", False)])
+
+        assert await query_goods_search("100%") == ["100% cashback"]
+
+    async def test_blank_query_returns_nothing(self, item_factory):
+
+        await item_factory(name="Anything", price=10, values=[("v", False)])
+
+        assert await query_goods_search("   ") == []
+        assert await query_goods_search("   ", count_only=True) == 0
+
+    async def test_count_only_matches_results(self, item_factory):
+
+        for i in range(3):
+            await item_factory(name=f"Bundle {i}", price=10, values=[(f"v{i}", False)])
+
+        assert await query_goods_search("Bundle", count_only=True) == 3
+        assert len(await query_goods_search("Bundle")) == 3
+
+
+class TestShopCategories:
+
+    async def test_shop_shows_categories(self, make_callback_query, fsm_context, category_factory):
+
+        await category_factory("Electronics")
+        await category_factory("Clothing")
+
+        call = make_callback_query(data="shop", user_id=600001)
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await shop_callback_handler(call, fsm_context)
+
+        args, kwargs = _screen_call(call)
+        text = kwargs.get("caption", args[0] if args else "")
+        assert "shop" in text.lower() or "categories" in text.lower() or "shop.categories" in text
+        assert '<tg-emoji emoji-id="5226513232549664618">🛍</tg-emoji>' in text
+        state = await fsm_context.get_state()
+        assert state == ShopStates.viewing_categories
+
+    async def test_ai_category_button_uses_premium_emoji_icon(
+            self, make_callback_query, fsm_context, category_factory
+    ):
+        await category_factory("ChatGPT")
+        call = make_callback_query(data="shop", user_id=600003)
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await shop_callback_handler(call, fsm_context)
+
+        item_text = mock_kb.call_args.kwargs["item_text"]
+        item_icon = mock_kb.call_args.kwargs["item_icon_custom_emoji_id"]
+        assert item_text("ChatGPT") == "ChatGPT"
+        assert item_icon("ChatGPT") == "5190529511212485938"
+
+    async def test_navigate_categories_page(self, make_callback_query, fsm_context, category_factory):
+
+        for i in range(15):
+            await category_factory(f"Cat_{i}")
+
+        call = make_callback_query(data="categories-page_1", user_id=600002)
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await navigate_categories(call, fsm_context)
+
+        _screen_call(call)
+
+
+class TestItemsList:
+
+    async def test_items_list_valid_category(self, make_callback_query, fsm_context, item_factory):
+
+        await item_factory(name="Widget", price=100, category="Widgets", values=[("w1", False)])
+
+        call = make_callback_query(data="cat:0:0", user_id=600010)
+        await fsm_context.update_data(category_page_items=["Widgets"])
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await items_list_callback_handler(call, fsm_context)
+
+        _screen_call(call)
+        data = await fsm_context.get_data()
+        assert data['current_category'] == 'Widgets'
+
+    async def test_ai_goods_heading_uses_premium_category_logo(
+            self, make_callback_query, fsm_context, item_factory
+    ):
+        await item_factory(name="ChatGPT Widget", price=100, category="ChatGPT", values=[("w1", False)])
+
+        call = make_callback_query(data="cat:0:0", user_id=600012)
+        await fsm_context.update_data(category_page_items=["ChatGPT"])
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await items_list_callback_handler(call, fsm_context)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert '<tg-emoji emoji-id="5190529511212485938">🤖</tg-emoji>' in text
+
+    async def test_items_list_invalid_index(self, make_callback_query, fsm_context):
+
+        call = make_callback_query(data="cat:5:0", user_id=600011)
+        await fsm_context.update_data(category_page_items=["OnlyCat"])
+
+        await items_list_callback_handler(call, fsm_context)
+
+        call.answer.assert_called_once()
+
+
+class TestItemInfo:
+
+    async def test_item_card_uses_category_artwork_when_product_has_no_image(
+            self, make_callback_query, fsm_context, item_factory
+    ):
+        await item_factory(
+            name="ChatGPT Momo", price=90, category="ChatGPT", values=[("momo", False)]
+        )
+        async with Database().session() as session:
+            await session.execute(
+                update(Categories)
+                .where(Categories.name == "ChatGPT")
+                .values(image_ref="categories/chatgpt.png")
+            )
+
+        call = make_callback_query(data="itm:0:0", user_id=600024)
+        call.message.photo = [MagicMock()]
+        call.message.edit_media = AsyncMock()
+        await fsm_context.update_data(
+            goods_page_items=["ChatGPT Momo"], goods_page_num=0, current_category="ChatGPT"
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.message.edit_text.assert_not_called()
+        call.message.bot.send_photo.assert_not_called()
+        call.message.edit_media.assert_awaited_once()
+        media = call.message.edit_media.call_args.kwargs["media"]
+        assert str(media.media.path).endswith("assets/ui/categories/chatgpt.png")
+        assert "ChatGPT Momo" in media.caption
+        assert 'emoji-id="5190529511212485938"' in media.caption
+
+    async def test_purchase_choice_has_category_intro(
+            self, make_callback_query, fsm_context, user_factory, item_factory
+    ):
+        await user_factory(telegram_id=600027, balance=1000)
+        await item_factory(
+            name="ChatGPT Purchase", price=90, category="ChatGPT", values=[("value", False)]
+        )
+        await fsm_context.update_data(csrf_item="ChatGPT Purchase")
+        call = make_callback_query(data="buy_item", user_id=600027)
+
+        await buy_item_callback_handler(call, fsm_context)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert 'emoji-id="5190529511212485938"' in text
+        assert "ChatGPT Purchase" in text
+
+    async def test_long_item_description_stays_with_category_photo(
+            self, make_callback_query, fsm_context, item_factory
+    ):
+        await item_factory(
+            name="ChatGPT Long", price=90, category="ChatGPT",
+            description="Описание товара. " * 200,
+            values=[("delivery", False)],
+        )
+        async with Database().session() as session:
+            await session.execute(
+                update(Categories)
+                .where(Categories.name == "ChatGPT")
+                .values(image_ref="categories/chatgpt.png")
+            )
+
+        call = make_callback_query(data="itm:0:0", user_id=600025)
+        call.message.photo = [MagicMock()]
+        call.message.edit_media = AsyncMock()
+        await fsm_context.update_data(
+            goods_page_items=["ChatGPT Long"], goods_page_num=0, current_category="ChatGPT"
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.message.bot.send_photo.assert_not_called()
+        media = call.message.edit_media.call_args.kwargs["media"]
+        assert len(media.caption) <= 1024
+        call.message.bot.send_message.assert_not_called()
+
+    async def test_item_info_display(self, make_callback_query, fsm_context, item_factory):
+
+        await item_factory(name="InfoItem", price=250, category="TestCat", values=[("val1", False)])
+
+        call = make_callback_query(data="itm:0:0", user_id=600020)
+        await fsm_context.update_data(
+            goods_page_items=["InfoItem"],
+            current_category="TestCat",
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.message.edit_text.assert_called_once()
+
+    async def test_item_info_invalid_index(self, make_callback_query, fsm_context):
+
+        call = make_callback_query(data="itm:10:0", user_id=600021)
+        await fsm_context.update_data(goods_page_items=["SomeItem"])
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.answer.assert_called_once()
+
+    async def test_item_info_resolves_from_state_without_requery(self, make_callback_query,
+                                                                  fsm_context, item_factory):
+
+        await item_factory(name="StateItem", price=100, category="StateCat", values=[("v", False)])
+
+        call = make_callback_query(data="itm:0:0", user_id=600025)
+        await fsm_context.update_data(
+            goods_page_items=["StateItem"],
+            goods_page_num=0,
+            current_category="StateCat",
+        )
+
+        # The page list saved by the last render must be enough — the list
+        # query is not re-run for the drill-down.
+        with patch('bot.handlers.user.shop_and_goods.query_items_in_category',
+                   new_callable=AsyncMock) as mock_q:
+            await item_info_callback_handler(call, fsm_context)
+
+        mock_q.assert_not_called()
+        call.message.edit_text.assert_called_once()
+
+    async def test_item_info_state_page_mismatch_falls_back(self, make_callback_query,
+                                                            fsm_context, item_factory):
+
+        await item_factory(name="FallbackItem", price=100, category="FallbackCat", values=[("v", False)])
+
+        # Keyboard says page 0 but state stored page 3 — must fall back to the DB path.
+        call = make_callback_query(data="itm:0:0", user_id=600026)
+        await fsm_context.update_data(
+            goods_page_items=["WrongItem"],
+            goods_page_num=3,
+            current_category="FallbackCat",
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.message.edit_text.assert_called_once()
+        data = await fsm_context.get_data()
+        assert data['csrf_item'] == 'FallbackItem'
+
+    async def test_item_info_not_found_in_db(self, make_callback_query, fsm_context):
+
+        call = make_callback_query(data="itm:0:0", user_id=600022)
+        await fsm_context.update_data(
+            goods_page_items=["NonExistent"],
+            current_category="TestCat",
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.answer.assert_called_once()
+
+    async def test_item_info_unlimited_quantity(self, make_callback_query, fsm_context, item_factory):
+
+        await item_factory(name="InfItem", price=50, category="InfCat", values=[("unlimited_val", True)])
+
+        call = make_callback_query(data="itm:0:0", user_id=600023)
+        await fsm_context.update_data(
+            goods_page_items=["InfItem"],
+            current_category="InfCat",
+        )
+
+        await item_info_callback_handler(call, fsm_context)
+
+        call.message.edit_text.assert_called_once()
+        text = call.message.edit_text.call_args[0][0]
+        assert "quantity_unlimited" in text
+
+
+class TestAppliedPromoDoesNotFollowTheUser:
+    async def _promo(self, code, percent="50", **kw):
+        from bot.database.models.main import PromoCodes
+        from bot.database.main import Database
+        from decimal import Decimal
+        async with Database().session() as s:
+            s.add(PromoCodes(
+                code=code, discount_type="percent", discount_value=Decimal(percent),
+                scope=kw.pop("scope", "global"), max_uses=0, current_uses=0,
+                is_active=True, **kw,
+            ))
+
+    async def _open(self, make_callback_query, fsm_context, name, user_id):
+        call = make_callback_query(data="itm:0:0", user_id=user_id)
+        await fsm_context.update_data(
+            goods_page_items=[name], goods_page_num=0, current_category="PromoCat",
+        )
+        await item_info_callback_handler(call, fsm_context)
+        return call
+
+    async def test_switching_items_clears_the_applied_promo(
+        self, make_callback_query, fsm_context, item_factory, user_factory
+    ):
+        await user_factory(telegram_id=600040)
+        await item_factory(name="PromoA", price=100, category="PromoCat", values=[("a", False)])
+        await item_factory(name="PromoB", price=100, category="PromoCat", values=[("b", False)])
+        await self._promo("CARRY50")
+
+        await self._open(make_callback_query, fsm_context, "PromoA", 600040)
+        await fsm_context.update_data(applied_promo="CARRY50")
+
+        await self._open(make_callback_query, fsm_context, "PromoB", 600040)
+
+        data = await fsm_context.get_data()
+        assert data["csrf_item"] == "PromoB"
+        assert data["applied_promo"] is None
+
+    async def test_reopening_the_same_item_keeps_the_promo(
+        self, make_callback_query, fsm_context, item_factory, user_factory
+    ):
+        await user_factory(telegram_id=600041)
+        await item_factory(name="PromoSame", price=100, category="PromoCat", values=[("v", False)])
+        await self._promo("KEEP50")
+
+        await self._open(make_callback_query, fsm_context, "PromoSame", 600041)
+        await fsm_context.update_data(applied_promo="KEEP50")
+        call = await self._open(make_callback_query, fsm_context, "PromoSame", 600041)
+
+        assert (await fsm_context.get_data())["applied_promo"] == "KEEP50"
+        assert "price_discounted" in call.message.edit_text.call_args[0][0]
+
+    async def test_a_promo_that_stopped_applying_is_dropped_on_render(
+        self, make_callback_query, fsm_context, item_factory, user_factory
+    ):
+        """State is not trusted: the code is re-checked against this product."""
+        from datetime import datetime, timedelta, timezone
+
+        await user_factory(telegram_id=600042)
+        await item_factory(name="PromoExp", price=100, category="PromoCat", values=[("v", False)])
+        await self._promo("GONE50", expires_at=datetime.now(timezone.utc) - timedelta(hours=1))
+
+        await self._open(make_callback_query, fsm_context, "PromoExp", 600042)
+        await fsm_context.update_data(applied_promo="GONE50")
+        call = await self._open(make_callback_query, fsm_context, "PromoExp", 600042)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert "price_discounted" not in text
+        assert (await fsm_context.get_data())["applied_promo"] is None
+
+
+class TestBoughtItems:
+
+    async def test_bought_items_empty(self, make_callback_query, fsm_context, user_factory):
+
+        await user_factory(telegram_id=600030)
+
+        call = make_callback_query(data="bought_items", user_id=600030)
+
+        with patch('bot.handlers.user.shop_and_goods.lazy_paginated_keyboard', new_callable=AsyncMock) as mock_kb:
+            mock_kb.return_value = MagicMock()
+            await bought_items_callback_handler(call, fsm_context)
+
+        call.message.edit_text.assert_called_once()
+        assert "purchases.title" in call.message.edit_text.call_args[0][0]
+
+    async def test_bought_item_info_not_found(self, make_callback_query):
+
+        call = make_callback_query(data="bought-item:99999:profile", user_id=600031)
+
+        await bought_item_info_callback_handler(call)
+
+        call.answer.assert_called_once()
+
+
+class TestHtmlEscapingInRenderedText:
+    HOSTILE = '<b>Widget</b> & "co" <script>'
+
+    async def test_item_card_escapes_name_and_description(
+        self, make_callback_query, fsm_context, item_factory
+    ):
+
+        await item_factory(
+            name=self.HOSTILE, price=100, description=self.HOSTILE,
+            values=[("v1", False)],
+        )
+
+        call = make_callback_query(data="itm:0:0", user_id=610901)
+        await _render_item_page(call, fsm_context, self.HOSTILE, "gp_0", user_id=610901)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert "&lt;b&gt;Widget&lt;/b&gt;" in text
+        assert "&amp;" in text
+        # No raw angle bracket survives outside the template's own markup.
+        assert "<script>" not in text
+
+    async def test_cart_escapes_item_name(self, make_callback_query, user_factory, item_factory):
+
+        await user_factory(telegram_id=610902, balance=1000)
+        await item_factory(name=self.HOSTILE, price=100, values=[("v1", False)])
+        ok, _ = await add_to_cart(610902, self.HOSTILE)
+        assert ok
+
+        call = make_callback_query(data="cart", user_id=610902)
+        await _show_cart(call)
+
+        text = call.message.edit_text.call_args[0][0]
+        assert "&lt;b&gt;Widget&lt;/b&gt;" in text
+        assert "<script>" not in text
+
+    async def test_esc_helper_handles_none(self):
+        from bot.i18n import esc
+
+        assert esc(None) == ""
+        assert esc(5) == "5"
+        assert esc("a < b & c") == "a &lt; b &amp; c"
+
+
+class TestBackFromItemCardAfterPurchase:
+    """The receipt's Back button leads to the item card, whose own Back is
+    gp_/sp_ — and those pagers are state-filtered. Anything on that path that
+    drops the browsing state leaves the card's Back button dead."""
+
+    async def test_back_to_item_after_buying_keeps_the_browsing_state(
+        self, make_callback_query, fsm_context, user_factory, item_factory
+    ):
+
+        await user_factory(telegram_id=660001, balance=1000)
+        await item_factory(name="BoughtThenBack", price=100, values=[("v1", False)])
+
+        # Browsing a category, with the item card open.
+        await fsm_context.update_data(csrf_item="BoughtThenBack", item_back_data="gp_0",
+                                      current_category="TestCategory")
+        await fsm_context.set_state(ShopStates.viewing_goods)
+
+        buy = make_callback_query(data="buy_item", user_id=660001)
+        await buy_item_callback_handler(buy, fsm_context)
+
+        # Receipt -> Back returns to the item card.
+        back = make_callback_query(data="back_to_item", user_id=660001)
+        await back_to_item_handler(back, fsm_context)
+
+        # The card's Back is gp_0; navigate_goods is filtered on this state, so
+        # losing it here is what made the button do nothing.
+        assert await fsm_context.get_state() == ShopStates.viewing_goods
+
+    async def test_back_to_item_from_search_keeps_the_search_state(
+        self, make_callback_query, fsm_context, user_factory, item_factory
+    ):
+
+        await user_factory(telegram_id=660002, balance=1000)
+        await item_factory(name="SearchThenBack", price=100, values=[("v1", False)])
+
+        await fsm_context.update_data(csrf_item="SearchThenBack", item_back_data="sp_0",
+                                      search_query="Search")
+        await fsm_context.set_state(ShopStates.viewing_search_results)
+
+        buy = make_callback_query(data="buy_item", user_id=660002)
+        await buy_item_callback_handler(buy, fsm_context)
+
+        back = make_callback_query(data="back_to_item", user_id=660002)
+        await back_to_item_handler(back, fsm_context)
+
+        assert await fsm_context.get_state() == ShopStates.viewing_search_results
+
+    async def test_a_stale_promo_state_does_not_hijack_the_back_target(
+        self, make_callback_query, fsm_context, user_factory, item_factory
+    ):
+        """Applying a promo while browsing a category, then later opening an item
+        from search, must not restore the category state over the search one."""
+
+        await user_factory(telegram_id=660003, balance=1000)
+        await item_factory(name="StalePromoState", price=100, values=[("v1", False)])
+
+        # Category browsing: open the promo prompt, then leave it.
+        await fsm_context.update_data(csrf_item="StalePromoState", item_back_data="gp_0")
+        await fsm_context.set_state(ShopStates.viewing_goods)
+        await apply_promo_handler(make_callback_query(data="apply_promo", user_id=660003), fsm_context)
+        await back_to_item_handler(make_callback_query(data="back_to_item", user_id=660003), fsm_context)
+        assert await fsm_context.get_state() == ShopStates.viewing_goods
+
+        # Now the same user arrives at an item from search instead.
+        await fsm_context.update_data(item_back_data="sp_0", search_query="Stale")
+        await fsm_context.set_state(ShopStates.viewing_search_results)
+        await back_to_item_handler(make_callback_query(data="back_to_item", user_id=660003), fsm_context)
+
+        assert await fsm_context.get_state() == ShopStates.viewing_search_results
+
+    @staticmethod
+    def _registered_filters(callback):
+        """The filters aiogram will run for a handler, as registered."""
+
+        for h in router.callback_query.handlers:
+            if h.callback is callback:
+                return h.filters or ()
+        raise AssertionError(f"{callback.__name__} is not registered on the router")
+
+    async def _passes_registered_filters(self, callback, call, fsm_context):
+        """Whether aiogram's own filters would let this callback through.
+
+        Calling the handler directly would bypass them, which is exactly the
+        thing that was broken — the payload matched, the state did not.
+        """
+        raw_state = await fsm_context.get_state()
+        # aiogram stores raw_state as a string; the fake context keeps the object.
+        raw_state = getattr(raw_state, "state", raw_state)
+
+        for f in self._registered_filters(callback):
+            verdict = f.magic.resolve(call) if f.magic is not None \
+                else f.callback(call, raw_state=raw_state)
+            if not verdict:
+                return False
+        return True
+
+    async def test_the_back_button_actually_pages_after_a_purchase(
+        self, make_callback_query, fsm_context, user_factory, item_factory
+    ):
+        """End-to-end on the reported flow: browse a category, buy, return from
+        the receipt, then press the card's Back — aiogram must route it, and it
+        must render the goods list rather than silently doing nothing."""
+
+        await user_factory(telegram_id=660004, balance=1000)
+        await item_factory(name="EndToEndBack", price=100, category="E2ECat",
+                           values=[("v1", False), ("v2", False)])
+
+        await shop_callback_handler(make_callback_query(data="shop", user_id=660004), fsm_context)
+        await items_list_callback_handler(make_callback_query(data="cat:0:0", user_id=660004), fsm_context)
+        await item_info_callback_handler(make_callback_query(data="itm:0:0", user_id=660004), fsm_context)
+
+        await buy_item_callback_handler(make_callback_query(data="buy_item", user_id=660004), fsm_context)
+        await back_to_item_handler(make_callback_query(data="back_to_item", user_id=660004), fsm_context)
+
+        # The card's Back is gp_0.
+        page = make_callback_query(data="gp_0", user_id=660004)
+        assert await self._passes_registered_filters(navigate_goods, page, fsm_context), \
+            "gp_0 would not reach navigate_goods — the Back button is dead"
+
+        await navigate_goods(page, fsm_context)
+        _args, screen_kwargs = _screen_call(page)
+        assert screen_kwargs.get("reply_markup") is not None
+
+    async def test_the_filter_probe_can_fail(self, make_callback_query, fsm_context):
+        """Guard: with the browsing state cleared, gp_0 must NOT route."""
+
+        await fsm_context.set_state(None)
+        page = make_callback_query(data="gp_0", user_id=660005)
+        assert await self._passes_registered_filters(navigate_goods, page, fsm_context) is False

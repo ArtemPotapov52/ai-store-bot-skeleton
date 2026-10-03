@@ -1,0 +1,406 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .procurement-line { display: grid; grid-template-columns: minmax(145px, 1fr) minmax(190px, 1.35fr) minmax(100px, .65fr) minmax(130px, .9fr) minmax(210px, 1.3fr) 38px; gap: .75rem; align-items: end; padding: 1rem 0; border-bottom: 1px solid var(--tblr-border-color); }
+  .procurement-line:last-child { border-bottom: 0; }
+  .procurement-line > * { min-width: 0; }
+  .procurement-line .form-control, .procurement-line .form-select { min-width: 0; }
+  .procurement-remove { width: 38px; justify-self: end; }
+  .procurement-totals { font-variant-numeric: tabular-nums; }
+  .procurement-number { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .procurement-day { display: grid; grid-template-columns: 92px minmax(100px, 1fr) minmax(190px, auto); gap: .75rem; align-items: center; }
+  .procurement-day-result { min-width: 0; }
+  .procurement-day + .procurement-day { margin-top: .75rem; }
+  .procurement-bar-track { height: 10px; background: var(--tblr-bg-surface-secondary); border-radius: 5px; overflow: hidden; }
+  .procurement-bar { height: 10px; min-width: 2px; background: var(--tblr-green); border-radius: 5px; }
+  .procurement-bar.loss { background: var(--tblr-red); }
+  .procurement-table td, .procurement-table th { vertical-align: middle; }
+  .procurement-plan-cell { min-width: 240px; max-width: 460px; white-space: normal; }
+  .procurement-plan-details summary { cursor: pointer; }
+  .procurement-plan-details summary:focus-visible { outline: 2px solid var(--tblr-primary); outline-offset: 2px; border-radius: .25rem; }
+  .procurement-plan-items li { overflow-wrap: anywhere; }
+  @media (max-width: 1200px) {
+    .procurement-line { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; }
+    .procurement-line .procurement-category, .procurement-line .procurement-product,
+    .procurement-line .procurement-quantity, .procurement-line .procurement-cost { grid-column: span 1; }
+    .procurement-line .procurement-sale { grid-column: span 3; }
+    .procurement-line .procurement-remove { grid-column: span 1; }
+  }
+  @media (max-width: 900px) {
+    .procurement-line { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; }
+    .procurement-line .procurement-category, .procurement-line .procurement-product,
+    .procurement-line .procurement-sale, .procurement-line .procurement-remove { grid-column: span 2; }
+    .procurement-line .procurement-quantity, .procurement-line .procurement-cost { grid-column: span 1; }
+    .procurement-line .procurement-remove { justify-self: end; }
+    .procurement-day { grid-template-columns: 70px minmax(60px, 1fr); gap: .5rem; font-size: .85rem; }
+    .procurement-day-result { grid-column: 1 / -1; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="col-12">
+  <div class="card"><div class="card-body py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h1 class="h2 mb-1">Контроль закупок</h1>
+        <p class="text-muted mb-0">Соберите партию и оцените результат, если все позиции будут проданы.</p>
+      </div>
+      <div class="btn-group" role="group" aria-label="Раздел финансовой статистики">
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue">Доходы</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/expenses">Расходы</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?section=bot_stats">Статистика бота</a>
+        <a class="btn btn-sm btn-primary" href="/admin/procurement-control" aria-current="page">Контроль закупок</a>
+      </div>
+    </div>
+    <div class="alert alert-info mt-3 mb-0" role="note">
+      Это прогноз, а не фактическая закупка: сохранение не меняет цену товара, остаток склада, автовыдачу или раздел «Расходы».
+      Цены и названия сохраняются в истории как снимок на момент расчёта.
+    </div>
+  </div></div>
+</div>
+
+<div class="col-12"><div class="card">
+  <div class="card-header"><h2 class="card-title">Новый план партии</h2></div>
+  <div class="card-body">
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    {% if success %}<div class="alert alert-success" role="status">{{ success }}</div>{% endif %}
+    {% if can_save %}
+    {% if categories and products %}
+    <form method="POST" id="procurement-form">
+      <div class="row g-3 mb-3">
+        <div class="col-sm-6">
+          <label class="form-label" for="procurement-date">Дата плана, МСК</label>
+          <input class="form-control" id="procurement-date" type="date" name="plan_date" value="{{ plan_date }}" min="2000-01-01" max="2100-12-31" required>
+        </div>
+        <div class="col-sm-6">
+          <label class="form-label" for="procurement-title">Название партии <span class="text-muted">(необязательно)</span></label>
+          <input class="form-control" id="procurement-title" type="text" name="title" value="{{ title }}" maxlength="120" placeholder="Например, закупка на выходные">
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h3 class="h3 mb-0">Позиции корзины</h3>
+        <button class="btn btn-sm btn-outline-primary" id="add-procurement-line" type="button">Добавить товар</button>
+      </div>
+      <div id="procurement-lines" class="mt-2">
+        {% for row in draft_rows %}
+        {% set selected_category = row.get('category_id', '') %}
+        {% set selected_product = row.get('product_id', '') %}
+        {% set selected_mode = row.get('sale_mode', '') or 'catalog' %}
+        <div class="procurement-line" data-procurement-row>
+          <div class="procurement-category">
+            <label class="form-label" for="category-{{ loop.index0 }}">Категория</label>
+            <select class="form-select" id="category-{{ loop.index0 }}" name="category_id" data-category required>
+              <option value="">Выберите категорию</option>
+              {% for category in categories %}<option value="{{ category.id }}" {% if category.id|string == selected_category %}selected{% endif %}>{{ category.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="procurement-product">
+            <label class="form-label" for="product-{{ loop.index0 }}">Товар</label>
+            <select class="form-select" id="product-{{ loop.index0 }}" name="product_id" data-product required {% if not selected_category %}disabled{% endif %}>
+              <option value="">Сначала выберите категорию</option>
+              {% for product in products %}
+              <option value="{{ product.id }}" data-category-id="{{ product.category_id }}" data-current-price="{{ product.current_price }}" {% if product.id|string == selected_product %}selected{% endif %} {% if selected_category and product.category_id|string != selected_category %}hidden{% endif %}>
+                {{ product.name }} — {{ product.current_price }} {{ currency }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="procurement-quantity">
+            <label class="form-label" for="quantity-{{ loop.index0 }}">Количество</label>
+            <input class="form-control" id="quantity-{{ loop.index0 }}" name="quantity" type="number" min="1" max="100000" step="1" inputmode="numeric" value="{{ row.get('quantity', '') }}" placeholder="5" data-quantity required>
+          </div>
+          <div class="procurement-cost">
+            <label class="form-label" for="unit-cost-{{ loop.index0 }}">Закупка за шт., {{ currency }}</label>
+            <input class="form-control" id="unit-cost-{{ loop.index0 }}" name="unit_cost" type="text" pattern="[0-9]+([.,][0-9]{1,2})?" inputmode="decimal" value="{{ row.get('unit_cost', '') }}" placeholder="120 или 120,50" data-unit-cost required>
+          </div>
+          <div class="procurement-sale">
+            <div class="row g-2">
+              <div class="col-12">
+                <label class="form-label" for="sale-mode-{{ loop.index0 }}">Цена продажи</label>
+                <select class="form-select" id="sale-mode-{{ loop.index0 }}" name="sale_mode" data-sale-mode required>
+                  <option value="catalog" {% if selected_mode == 'catalog' %}selected{% endif %}>Текущая цена каталога</option>
+                  <option value="manual" {% if selected_mode == 'manual' %}selected{% endif %}>Задать цену вручную</option>
+                </select>
+              </div>
+              <div class="col-12" data-custom-price-wrap {% if selected_mode != 'manual' %}hidden{% endif %}>
+                <label class="form-label" for="custom-sale-price-{{ loop.index0 }}">Цена за штуку, {{ currency }}</label>
+                <input class="form-control" id="custom-sale-price-{{ loop.index0 }}" name="custom_sale_price" type="text" pattern="[0-9]+([.,][0-9]{1,2})?" inputmode="decimal" value="{{ row.get('custom_sale_price', '') }}" placeholder="135 или 135,50" data-custom-sale-price {% if selected_mode != 'manual' %}disabled{% endif %}>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline-danger procurement-remove" type="button" data-remove-line aria-label="Удалить товар из корзины" title="Удалить позицию"><span aria-hidden="true">×</span></button>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="card bg-body-tertiary mt-3 procurement-totals" aria-live="polite" aria-atomic="true">
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-4">
+            <div><div class="subheader">Себестоимость партии</div><div class="h3 mb-0" id="forecast-cost">—</div></div>
+            <div><div class="subheader">Выручка при продаже всего</div><div class="h3 mb-0" id="forecast-revenue">—</div></div>
+            <div><div class="subheader">Валовая прибыль</div><div class="h3 mb-0" id="forecast-profit">—</div></div>
+            <div><div class="subheader">Маржа / рентабельность</div><div class="h3 mb-0" id="forecast-percent">—</div></div>
+          </div>
+          <p class="text-muted mb-0 mt-2" id="forecast-hint">Заполните позиции. Это оценка при продаже всех единиц по выбранной цене, без учёта комиссий и возвратов.</p>
+        </div>
+      </div>
+      <button class="btn btn-primary w-100 mt-3" type="submit">Сохранить прогноз</button>
+    </form>
+    {% else %}<div class="empty"><p class="empty-title">В каталоге пока нет активных товаров</p><p class="empty-subtitle text-muted">Добавьте товары в активные конечные категории, чтобы собрать прогноз.</p></div>{% endif %}
+    {% else %}<div class="alert alert-info mb-0">Просматривать историю можно с правом статистики. Для создания прогнозов нужно право управления каталогом.</div>{% endif %}
+  </div>
+</div></div>
+
+<div class="col-12"><div class="card">
+  <div class="card-header"><h2 class="card-title">Сводка по дням</h2></div>
+  <div class="card-body">
+    {% for day in daily %}
+    <div class="procurement-day">
+      <div class="text-muted">{{ day.date_display }}</div>
+      <div class="procurement-bar-track" aria-hidden="true"><div class="procurement-bar {% if day.is_loss %}loss{% endif %}" style="width: {{ day.profit_bar_width }}%"></div></div>
+      <div class="procurement-day-result text-end">
+        <div class="procurement-number {% if day.is_loss %}text-danger{% else %}text-success{% endif %}">Прибыль: {{ day.gross_profit_display }} {{ currency }}</div>
+        <div class="text-muted small">Закупка {{ day.total_cost_display }} · выручка {{ day.expected_revenue_display }}</div>
+        <div class="text-muted small">{{ day.plans }} план(а), {{ day["items"] }} поз.</div>
+      </div>
+    </div>
+    {% else %}<div class="empty"><p class="empty-title">История прогнозов пока пуста</p><p class="empty-subtitle text-muted">Сохранённые планы появятся здесь с разбивкой по датам.</p></div>{% endfor %}
+  </div>
+</div></div>
+
+<div class="col-12"><div class="card">
+  <div class="card-header"><h2 class="card-title">История планов</h2><div class="card-actions text-muted">Всего: {{ history_total }}</div></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table procurement-table">
+    <thead><tr><th scope="col">Дата плана, МСК</th><th scope="col">Партия</th><th scope="col">Позиций</th><th scope="col">Закупка</th><th scope="col">Прогноз выручки</th><th scope="col">Валовая прибыль</th><th scope="col">Маржа / ROI</th><th scope="col">Сохранено</th></tr></thead>
+    <tbody>
+      {% for plan in history %}
+      <tr>
+        <td>{{ plan.date_display }}</td>
+        <td class="procurement-plan-cell">
+          <details class="procurement-plan-details">
+            <summary><span class="fw-semibold">{{ plan.title or ('План #' ~ plan.id) }}</span><span class="text-muted small"> · {{ plan.display_items|length }} поз. — нажмите, чтобы увидеть состав</span></summary>
+            <ul class="mb-0 mt-2 ps-3 text-muted small procurement-plan-items">
+              {% for item in plan.display_items %}
+              <li>{{ item.category_name }} / {{ item.product_name }}: {{ item.quantity }} × {{ item.unit_cost_display }} {{ currency }}; продажа {{ item.sale_price_display }} {{ currency }}{% if item.sale_price_mode == 'catalog' %} (цена каталога){% else %} (вручную){% endif %}. Итого закупка {{ item.total_cost_display }}, выручка {{ item.expected_revenue_display }}.</li>
+              {% endfor %}
+            </ul>
+          </details>
+        </td>
+        <td>{{ plan.display_items|length }}</td>
+        <td class="text-end procurement-number">{{ plan.total_cost_display }} {{ currency }}</td>
+        <td class="text-end procurement-number">{{ plan.expected_revenue_display }} {{ currency }}</td>
+        <td class="text-end procurement-number {% if plan.gross_profit < 0 %}text-danger{% else %}text-success{% endif %}">{{ plan.gross_profit_display }} {{ currency }}</td>
+        <td class="text-end procurement-number">{{ plan.gross_margin_percent }}% / {{ plan.return_on_cost_percent }}%</td>
+        <td>{{ plan.created_display }}</td>
+      </tr>
+      {% else %}<tr><td colspan="8" class="text-muted">Планов пока нет. Соберите корзину и сохраните первый прогноз.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+  {% if history_pages > 1 %}
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    {% if history_page > 1 %}<a class="btn btn-outline-secondary" href="?page={{ history_page - 1 }}" aria-label="Предыдущая страница истории">← Назад</a>{% else %}<span></span>{% endif %}
+    <span class="text-muted" aria-live="polite">Страница {{ history_page }} из {{ history_pages }}</span>
+    {% if history_page < history_pages %}<a class="btn btn-outline-secondary" href="?page={{ history_page + 1 }}" aria-label="Следующая страница истории">Вперёд →</a>{% else %}<span></span>{% endif %}
+  </div>
+  {% endif %}
+</div></div>
+
+{% if can_save and categories and products %}
+<template id="procurement-row-template">
+  <div class="procurement-line" data-procurement-row>
+    <div class="procurement-category">
+      <label class="form-label" data-label-category>Категория</label>
+      <select class="form-select" name="category_id" data-category required>
+        <option value="">Выберите категорию</option>
+        {% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="procurement-product">
+      <label class="form-label" data-label-product>Товар</label>
+      <select class="form-select" name="product_id" data-product required disabled>
+        <option value="">Сначала выберите категорию</option>
+        {% for product in products %}<option value="{{ product.id }}" data-category-id="{{ product.category_id }}" data-current-price="{{ product.current_price }}">{{ product.name }} — {{ product.current_price }} {{ currency }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="procurement-quantity">
+      <label class="form-label" data-label-quantity>Количество</label>
+      <input class="form-control" name="quantity" type="number" min="1" max="100000" step="1" inputmode="numeric" placeholder="5" data-quantity required>
+    </div>
+    <div class="procurement-cost">
+      <label class="form-label" data-label-cost>Закупка за шт., {{ currency }}</label>
+      <input class="form-control" name="unit_cost" type="text" pattern="[0-9]+([.,][0-9]{1,2})?" inputmode="decimal" placeholder="120 или 120,50" data-unit-cost required>
+    </div>
+    <div class="procurement-sale">
+      <div class="row g-2">
+        <div class="col-12">
+          <label class="form-label" data-label-mode>Цена продажи</label>
+          <select class="form-select" name="sale_mode" data-sale-mode required>
+            <option value="catalog" selected>Текущая цена каталога</option>
+            <option value="manual">Задать цену вручную</option>
+          </select>
+        </div>
+        <div class="col-12" data-custom-price-wrap hidden>
+          <label class="form-label" data-label-custom>Цена за штуку, {{ currency }}</label>
+          <input class="form-control" name="custom_sale_price" type="text" pattern="[0-9]+([.,][0-9]{1,2})?" inputmode="decimal" placeholder="135 или 135,50" data-custom-sale-price disabled>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-outline-danger procurement-remove" type="button" data-remove-line aria-label="Удалить товар из корзины" title="Удалить позицию"><span aria-hidden="true">×</span></button>
+  </div>
+</template>
+<script>
+(() => {
+  const form = document.getElementById("procurement-form");
+  const rowsRoot = document.getElementById("procurement-lines");
+  const rowTemplate = document.getElementById("procurement-row-template");
+  const addButton = document.getElementById("add-procurement-line");
+  if (!form || !rowsRoot || !rowTemplate || !addButton) return;
+
+  const currency = {{ currency|tojson }};
+  const money = (minor) => {
+    const negative = minor < 0n;
+    const absolute = negative ? -minor : minor;
+    const whole = absolute / 100n;
+    const cents = String(absolute % 100n).padStart(2, "0");
+    return `${negative ? "−" : ""}${Number(whole).toLocaleString("ru-RU")},${cents} ${currency}`;
+  };
+  const percent = (hundredths) => {
+    const negative = hundredths < 0n;
+    const absolute = negative ? -hundredths : hundredths;
+    return `${negative ? "−" : ""}${Number(absolute / 100n).toLocaleString("ru-RU")},${String(absolute % 100n).padStart(2, "0")}%`;
+  };
+  const ratioPercent = (profitMinor, baseMinor) => {
+    if (!baseMinor) return 0n;
+    const numerator = profitMinor * 10000n;
+    const negative = numerator < 0n;
+    const absolute = negative ? -numerator : numerator;
+    const rounded = (absolute + baseMinor / 2n) / baseMinor;
+    return negative ? -rounded : rounded;
+  };
+  const toMinor = (raw) => {
+    const text = String(raw || "").trim().replace(",", ".");
+    if (!/^\d+(?:\.\d{1,2})?$/.test(text)) return null;
+    const [whole, fractional = ""] = text.split(".");
+    return BigInt(whole) * 100n + BigInt((fractional + "00").slice(0, 2));
+  };
+  const rows = () => [...rowsRoot.querySelectorAll("[data-procurement-row]")];
+  const labelFor = (row, selector, input) => {
+    const label = row.querySelector(selector);
+    const control = row.querySelector(input);
+    if (!label || !control) return;
+    const id = `procurement-${input.replace(/[^a-z]+/gi, "-")}-${Math.random().toString(36).slice(2, 9)}`;
+    control.id = id;
+    label.htmlFor = id;
+  };
+  const updateProductOptions = (row, clearInvalid) => {
+    const category = row.querySelector("[data-category]");
+    const product = row.querySelector("[data-product]");
+    if (!category || !product) return;
+    const categoryId = category.value;
+    const selected = product.selectedOptions[0];
+    if (clearInvalid && selected?.value && selected.dataset.categoryId !== categoryId) product.value = "";
+    for (const option of product.options) {
+      if (option.value) option.hidden = !categoryId || option.dataset.categoryId !== categoryId;
+    }
+    product.disabled = !categoryId;
+  };
+  const updateSaleMode = (row) => {
+    const mode = row.querySelector("[data-sale-mode]");
+    const wrapper = row.querySelector("[data-custom-price-wrap]");
+    const price = row.querySelector("[data-custom-sale-price]");
+    if (!mode || !wrapper || !price) return;
+    const manual = mode.value === "manual";
+    wrapper.hidden = !manual;
+    price.disabled = !manual;
+    price.required = manual;
+  };
+  const updateRemoveButtons = () => {
+    const lineRows = rows();
+    lineRows.forEach((row) => {
+      const button = row.querySelector("[data-remove-line]");
+      if (button) button.disabled = lineRows.length <= 1;
+    });
+  };
+  const updateForecast = () => {
+    let cost = 0n;
+    let revenue = 0n;
+    let complete = 0;
+    let seenProducts = new Set();
+    let duplicate = false;
+    for (const row of rows()) {
+      const product = row.querySelector("[data-product]");
+      const quantityRaw = row.querySelector("[data-quantity]")?.value;
+      const costRaw = row.querySelector("[data-unit-cost]")?.value;
+      const mode = row.querySelector("[data-sale-mode]")?.value;
+      const customRaw = row.querySelector("[data-custom-sale-price]")?.value;
+      if (!product?.value || !quantityRaw || !costRaw || (mode === "manual" && !customRaw)) continue;
+      const quantity = Number(quantityRaw);
+      const unitCost = toMinor(costRaw);
+      const unitSale = mode === "manual" ? toMinor(customRaw) : toMinor(product.selectedOptions[0]?.dataset.currentPrice);
+      if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100000 || unitCost === null || unitSale === null || unitCost <= 0n || unitSale <= 0n) continue;
+      if (seenProducts.has(product.value)) duplicate = true;
+      seenProducts.add(product.value);
+      complete += 1;
+      cost += unitCost * BigInt(quantity);
+      revenue += unitSale * BigInt(quantity);
+    }
+    const profit = revenue - cost;
+    document.getElementById("forecast-cost").textContent = money(cost);
+    document.getElementById("forecast-revenue").textContent = money(revenue);
+    document.getElementById("forecast-profit").textContent = money(profit);
+    document.getElementById("forecast-profit").classList.toggle("text-danger", profit < 0n);
+    document.getElementById("forecast-profit").classList.toggle("text-success", profit >= 0n);
+    const margin = ratioPercent(profit, revenue);
+    const returnOnCost = ratioPercent(profit, cost);
+    document.getElementById("forecast-percent").textContent = `${percent(margin)} / ${percent(returnOnCost)}`;
+    const hint = document.getElementById("forecast-hint");
+    if (duplicate) hint.textContent = "Один товар можно добавить в корзину только один раз. Удалите дублирующую строку.";
+    else if (complete < rows().length) hint.textContent = `Заполнено строк: ${complete} из ${rows().length}. Итог пересчитается при заполнении всех позиций.`;
+    else hint.textContent = "Маржа = прибыль / выручка; ROI = прибыль / закупочная стоимость. Расчёт предполагает продажу всех единиц и не учитывает комиссии и возвраты.";
+  };
+  const bindRow = (row) => {
+    updateProductOptions(row, false);
+    updateSaleMode(row);
+    labelFor(row, "[data-label-category]", "[data-category]");
+    labelFor(row, "[data-label-product]", "[data-product]");
+    labelFor(row, "[data-label-quantity]", "[data-quantity]");
+    labelFor(row, "[data-label-cost]", "[data-unit-cost]");
+    labelFor(row, "[data-label-mode]", "[data-sale-mode]");
+    labelFor(row, "[data-label-custom]", "[data-custom-sale-price]");
+  };
+  rows().forEach(bindRow);
+  rowsRoot.addEventListener("input", updateForecast);
+  rowsRoot.addEventListener("change", (event) => {
+    const row = event.target.closest("[data-procurement-row]");
+    if (!row) return;
+    if (event.target.matches("[data-category]")) updateProductOptions(row, true);
+    if (event.target.matches("[data-sale-mode]")) updateSaleMode(row);
+    updateForecast();
+  });
+  rowsRoot.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-line]");
+    if (!button || rows().length <= 1) return;
+    button.closest("[data-procurement-row]").remove();
+    updateRemoveButtons();
+    updateForecast();
+  });
+  addButton.addEventListener("click", () => {
+    if (rows().length >= 50) {
+      document.getElementById("forecast-hint").textContent = "В одном плане можно сохранить не более 50 позиций.";
+      return;
+    }
+    const fragment = rowTemplate.content.cloneNode(true);
+    const row = fragment.querySelector("[data-procurement-row]");
+    bindRow(row);
+    rowsRoot.append(fragment);
+    updateRemoveButtons();
+    updateForecast();
+    rows().at(-1)?.querySelector("[data-category]")?.focus();
+  });
+  updateRemoveButtons();
+  updateForecast();
+})();
+</script>
+{% endif %}
+{% endblock %}

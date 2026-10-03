@@ -1,0 +1,144 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .revenue-bar-track { min-height: 26px; background: var(--tblr-bg-surface-secondary); border-radius: 6px; overflow: hidden; }
+  .revenue-bar { min-width: 3px; min-height: 26px; background: var(--tblr-primary); border-radius: 6px; }
+  .revenue-day { display: grid; grid-template-columns: 52px minmax(90px, 1fr) 92px; gap: .75rem; align-items: center; }
+  .revenue-day + .revenue-day { margin-top: .65rem; }
+  .revenue-table td, .revenue-table th { vertical-align: middle; }
+  .revenue-number { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  @media (max-width: 576px) {
+    .revenue-day { grid-template-columns: 44px minmax(60px, 1fr) 76px; gap: .4rem; font-size: .8rem; }
+    .revenue-number { font-size: .78rem; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h2 class="mb-1">Доходы магазина</h2>
+          <div class="text-muted">{{ period_start }} — {{ period_end }} · реальные покупки + ручные записи</div>
+        </div>
+        <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group" role="group" aria-label="Раздел доходов">
+          <a class="btn btn-sm btn-primary" href="?days={{ period_days }}" aria-current="page">Доходы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/expenses?days={{ period_days }}">Расходы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/finance?days={{ period_days }}">Финансы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="?section=bot_stats">Статистика бота</a>
+        </div>
+        <div class="btn-group" role="group" aria-label="Период доходов">
+          {% for days, label in period_options.items() %}
+          <a class="btn btn-sm {% if days == period_days %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+             href="?days={{ days }}" {% if days == period_days %}aria-current="page"{% endif %}>{{ label }}</a>
+          {% endfor %}
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="col-sm-6 col-lg-3">
+  <div class="card"><div class="card-body">
+    <div class="subheader">Выручка за период</div><div class="h1 mb-1 revenue-number">{{ summary_revenue }} {{ currency }}</div>
+    <div class="{{ change_class }}">{{ change_text }}</div>
+  </div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+  <div class="card"><div class="card-body">
+    <div class="subheader">Продано единиц</div><div class="h1 mb-1 revenue-number">{{ summary.units }}</div>
+    <div class="text-muted">реальных: {{ summary.actual_units }} · вручную: {{ summary.manual_units }}</div>
+  </div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+  <div class="card"><div class="card-body">
+    <div class="subheader">Покупки</div><div class="h1 mb-1 revenue-number">{{ summary.orders }}</div>
+    <div class="text-muted">уникальных покупателей: {{ summary.unique_buyers }}</div>
+  </div></div>
+</div>
+<div class="col-sm-6 col-lg-3">
+  <div class="card"><div class="card-body">
+    <div class="subheader">Ручная выручка</div><div class="h1 mb-1 revenue-number">{{ summary_manual_revenue }} {{ currency }}</div>
+    <div class="text-muted">не входит в реальные платежи</div>
+  </div></div>
+</div>
+
+<div class="col-lg-8">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">Выручка по дням</h3></div>
+    <div class="card-body">
+      {% if daily %}
+        {% for day in daily %}
+        <div class="revenue-day" title="{{ day.units }} шт.">
+          <div class="text-muted">{{ day.label }}</div>
+          <div class="revenue-bar-track"><div class="revenue-bar" style="width: {{ day.bar_width }}%" aria-label="{{ day.revenue_display }} {{ currency }}"></div></div>
+          <div class="text-end revenue-number">{{ day.revenue_display }} {{ currency }}</div>
+        </div>
+        {% endfor %}
+      {% else %}<div class="empty"><p class="empty-title">Пока нет данных</p><p class="empty-subtitle text-muted">Продажи появятся здесь после первой покупки или ручного внесения.</p></div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="col-lg-4">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">Состав выручки</h3></div>
+    <div class="card-body">
+      <div class="d-flex justify-content-between mb-2"><span>Реальные покупки</span><strong class="revenue-number">{{ summary_actual_revenue }} {{ currency }}</strong></div>
+      <div class="d-flex justify-content-between mb-3"><span>Ручные записи</span><strong class="revenue-number">{{ summary_manual_revenue }} {{ currency }}</strong></div>
+      <div class="progress progress-sm"><div class="progress-bar bg-primary" style="width: {% if summary.revenue %}{{ (summary.actual_revenue / summary.revenue * 100)|round(0, 'floor') }}{% else %}0{% endif %}%"></div></div>
+      <div class="text-muted small mt-2">Синяя часть — реальные покупки, остальное — ручные записи.</div>
+    </div>
+  </div>
+</div>
+
+<div class="col-lg-6">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">По категориям</h3></div>
+    <div class="table-responsive"><table class="table table-vcenter card-table revenue-table"><thead><tr><th>Категория</th><th>Единиц</th><th class="text-end">Выручка</th><th class="text-end">Доля</th></tr></thead><tbody>
+      {% for row in categories_report %}<tr><td>{{ row.name }}</td><td>{{ row.units }}</td><td class="text-end revenue-number">{{ row.revenue_display }} {{ currency }}</td><td class="text-end">{{ row.share }}%</td></tr>{% else %}<tr><td colspan="4" class="text-muted">Нет данных за выбранный период.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+
+<div class="col-lg-6">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">Топ товаров</h3></div>
+    <div class="table-responsive"><table class="table table-vcenter card-table revenue-table"><thead><tr><th>Товар</th><th>Продано</th><th class="text-end">Выручка</th></tr></thead><tbody>
+      {% for row in products_report %}<tr><td>{{ row.name }}</td><td>{{ row.units }}</td><td class="text-end revenue-number">{{ row.revenue_display }} {{ currency }}</td></tr>{% else %}<tr><td colspan="3" class="text-muted">Нет реальных продаж за выбранный период.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+
+<div class="col-lg-5">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">Добавить выручку вручную</h3></div>
+    <div class="card-body">
+      {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+      {% if result %}<div class="alert alert-success" role="status">{{ result }}</div>{% endif %}
+      {% if can_add_manual %}
+      <p class="text-muted">Запись попадёт в отчёт за текущую дату и будет отмечена как ручная. Реальные платежи и покупки не изменяются.</p>
+      <form method="POST" novalidate>
+        <input type="hidden" name="days" value="{{ period_days }}">
+        <div class="mb-3"><label class="form-label" for="revenue_category">Категория</label><select class="form-select" name="category_id" id="revenue_category" required><option value="" disabled {% if not selected_category_id %}selected{% endif %}>Выберите категорию</option>{% for category in categories %}<option value="{{ category.id }}" {% if category.id|string == selected_category_id %}selected{% endif %}>{{ category.name }}</option>{% endfor %}</select></div>
+        <div class="mb-3"><label class="form-label" for="revenue_quantity">Количество</label><input class="form-control" name="quantity" id="revenue_quantity" type="number" min="1" max="100000" inputmode="numeric" value="{{ quantity }}" placeholder="Например, 3" required></div>
+        <div class="mb-3"><label class="form-label" for="revenue_unit_price">Цена за единицу, {{ currency }}</label><input class="form-control" name="unit_price" id="revenue_unit_price" type="number" min="0.01" step="0.01" inputmode="decimal" value="{{ unit_price }}" placeholder="Например, 55" required></div>
+        <button class="btn btn-primary w-100" type="submit">Добавить в доходы</button>
+      </form>
+      {% else %}<div class="alert alert-info mb-0">У вас есть доступ к просмотру статистики, но нет права добавлять финансовые записи вручную.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="col-lg-7">
+  <div class="card h-100">
+    <div class="card-header"><h3 class="card-title">Последние ручные записи</h3></div>
+    <div class="table-responsive"><table class="table table-vcenter card-table revenue-table"><thead><tr><th>Дата</th><th>Категория</th><th>Кол-во</th><th class="text-end">Сумма</th></tr></thead><tbody>
+      {% for row in manual_history %}<tr><td>{{ row.created_display }}</td><td>{{ row.category_name }}</td><td>{{ row.quantity }} × {{ row.unit_price_display }}</td><td class="text-end revenue-number">{{ row.total_display }} {{ currency }}</td></tr>{% else %}<tr><td colspan="4" class="text-muted">Ручных записей пока нет.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "sqladmin/edit.html" %}
+
+{% block additional_edit_fields %}
+<div class="alert alert-info" role="status">
+  <p class="mb-0">Остаток и выдача живут только в <a class="alert-link" href="{{ url_for('admin:list', identity='item-values') }}">«Складе и автовыдаче»</a> — добавляйте и списывайте единицы там. При цене по количеству цена в поле «Цена» означает стоимость одной единицы; минимум и максимум относятся к количеству в одном заказе.</p>
+</div>
+<div class="alert alert-warning" role="note">Для персональной VPN-выдачи включите галку у товара и добавьте на склад одну бесконечную строку-шаблон. При покупке будет выдана уникальная ссылка; без настроенного <code>VPN_UPSTREAM_SUBSCRIPTION_URL</code> покупка отклоняется без списания денег.</div>
+<div class="alert alert-secondary mb-0" role="note">Пост о поступлении в канал включается галкой в разделе <b>«Склад и автовыдача»</b> при добавлении единиц товара.</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.querySelector('[name="is_variable_pricing"]');
+  const bounds = ['min_quantity', 'max_quantity'].map(name =>
+    document.querySelector(`[name="${name}"]`)?.closest('.form-group')
+  ).filter(Boolean);
+  if (!toggle || bounds.length !== 2) return;
+  const updateBounds = () => bounds.forEach(field => { field.hidden = !toggle.checked; });
+  toggle.addEventListener('change', updateBounds);
+  updateBounds();
+});
+</script>
+{% endblock %}

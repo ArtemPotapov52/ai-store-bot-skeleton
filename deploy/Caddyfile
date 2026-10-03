@@ -1,0 +1,9 @@
+# Public admin panel for the My Store bot (managed by setup-public-admin.sh).
+# The bot itself keeps listening on 127.0.0.1:9090 — Caddy terminates HTTPS
+# and proxies to it. Replace the domain with your own subdomain.
+admin.example.com {
+	request_body {
+		max_size 64KB
+	}
+	reverse_proxy 127.0.0.1:9090
+}

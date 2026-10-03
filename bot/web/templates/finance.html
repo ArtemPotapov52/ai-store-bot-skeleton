@@ -1,0 +1,107 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .finance-number { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .finance-table td, .finance-table th { vertical-align: middle; }
+  @media (max-width: 767px) { .finance-number { white-space: normal; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="col-12"><div class="card"><div class="card-body py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div><h2 class="mb-1">Финансы</h2><div class="text-muted">{% if days == 1 %}Сегодня, {{ today.strftime("%d.%m.%Y") }}, МСК{% else %}{{ start_day.strftime("%d.%m.%Y") }} — {{ today.strftime("%d.%m.%Y") }}, все даты по МСК{% endif %}</div></div>
+    <div class="d-flex flex-wrap gap-2">
+      <div class="btn-group" role="group" aria-label="Финансовые разделы">
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?days={{ other_days }}">Доходы</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/expenses?days={{ other_days }}">Расходы</a>
+        <a class="btn btn-sm btn-primary" href="?days={{ days }}" aria-current="page">Финансы</a>
+        <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?section=bot_stats&amp;days={{ other_days }}">Статистика бота</a>
+      </div>
+      <div class="btn-group" role="group" aria-label="Период отчёта">
+        {% for period, label in period_options.items() %}<a class="btn btn-sm {% if period == days %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?days={{ period }}" {% if period == days %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div></div></div>
+
+{% if error %}<div class="col-12"><div class="alert alert-danger" role="alert">{{ error }}</div></div>{% endif %}
+{% if result %}<div class="col-12"><div class="alert alert-success" role="status">{{ result }}</div></div>{% endif %}
+<div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Продажи товаров</div><div class="h2 finance-number">{{ sales_total_display }} {{ currency }}</div><div class="text-muted">{{ sales_count }} выданных единиц {% if days == 1 %}сегодня{% else %}за период{% endif %}</div></div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Поступления вне бота</div><div class="h2 finance-number">{{ receipt_total_display }} {{ currency }}</div><div class="text-muted">{{ receipt_count }} записей {% if days == 1 %}сегодня{% endif %}; не входят в продажи и баланс бота</div></div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Закупки / расходы на товар</div><div class="h2 finance-number">{{ expense_total_display }} {{ currency }}</div><div class="text-muted">{{ expense_count }} записей {% if days == 1 %}сегодня{% else %}за период{% endif %}</div></div></div></div>
+<div class="col-sm-6 col-xl-3"><div class="card"><div class="card-body"><div class="subheader">Баланс покупателей к выдаче</div><div class="h2 finance-number">{{ total_user_balance_display }} {{ currency }}</div><div class="text-muted">Текущее обязательство магазина, не доход периода</div></div></div></div>
+
+<div class="col-12"><div class="alert alert-info mb-0" role="note">
+  <strong>Не смешиваем потоки.</strong> Продажи — по выданным товарам; платежи провайдеров — успешные пополнения по данным бота; внешние поступления — отдельный ручной учёт; балансы пользователей — обязательство выдать товар или вернуть деньги. Внесённые закупки не связаны с конкретными проданными экземплярами, поэтому здесь не показывается неподтверждённая «чистая прибыль».
+  {% if unallocated_total > 0 %}<br><strong>Не распределено:</strong> {{ unallocated_total_display }} {{ currency }} внешних поступлений (по всей истории) ещё не привязано к расходам.{% endif %}
+  {% if unfunded_expenses_count > 0 %}<br><strong>Проверь:</strong> {{ unfunded_expenses_count }} закупок за период записаны без привязки к источнику денег.{% endif %}
+</div></div>
+
+<div class="col-lg-7"><div class="card h-100"><div class="card-header"><h3 class="card-title">Движение по дням</h3></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table finance-table"><thead><tr><th>Дата, МСК</th><th class="text-end">Продажи</th><th class="text-end">Внешние поступления</th><th class="text-end">Закупки</th><th class="text-end">Внешние поступления − закупки</th></tr></thead><tbody>
+    {% for row in daily %}<tr><td>{{ row.date_display }}</td><td class="text-end finance-number">{{ row.sales_display }} {{ currency }}</td><td class="text-end finance-number">{{ row.receipts_display }} {{ currency }}</td><td class="text-end finance-number">{{ row.expenses_display }} {{ currency }}</td><td class="text-end finance-number {% if row.cash_delta < 0 %}text-danger{% else %}text-success{% endif %}">{{ row.cash_delta_display }} {{ currency }}</td></tr>
+    {% else %}<tr><td colspan="5" class="text-muted">За этот период записей пока нет.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="card-body pt-0"><small class="text-muted">Последняя колонка — только разница между внесёнными внешними поступлениями и закупками. Это не прибыль: платежи, комиссии, возвраты и несвязанные деньги учитываются отдельно.</small></div>
+</div></div>
+
+<div class="col-lg-5"><div class="card h-100"><div class="card-header"><h3 class="card-title">Успешные пополнения через провайдеров{% if days == 1 %} за сегодня{% endif %}</h3></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table finance-table"><thead><tr><th>Провайдер</th><th>Валюта</th><th>Операций</th><th class="text-end">Сумма</th></tr></thead><tbody>
+    {% for row in payment_groups %}<tr><td>{{ row.provider }}</td><td>{{ row.currency }}</td><td>{{ row.count }}</td><td class="text-end finance-number">{{ row.amount_display }} {{ row.currency }}</td></tr>
+    {% else %}<tr><td colspan="4" class="text-muted">Успешных пополнений в базе за этот период нет.</td></tr>{% endfor %}
+  </tbody></table></div>
+  <div class="card-body pt-0"><small class="text-muted">Пополнение баланса не считается продажей товара. Суммы оставлены в исходных валютах; комиссии провайдера могут отличаться.</small></div>
+</div></div>
+
+<div class="col-lg-6"><div class="card h-100"><div class="card-header"><h3 class="card-title">Продажи по товарам</h3></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table finance-table"><thead><tr><th>Товар</th><th>Продано</th><th class="text-end">Выручка</th><th>Себестоимость в учёте</th></tr></thead><tbody>
+    {% for row in sales %}<tr><td>{{ row.name }}</td><td>{{ row.units_display }}</td><td class="text-end finance-number">{{ row.sales_display }} {{ currency }}</td><td>{% if row.cost_missing %}<span class="badge bg-red-lt">Не записана</span>{% else %}<span class="text-warning">Есть расходы, но нет связи с проданными единицами</span>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="4" class="text-muted">Продаж за выбранный период нет.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div></div>
+
+<div class="col-lg-6"><div class="card h-100"><div class="card-header"><h3 class="card-title">Внести внешнее поступление</h3></div><div class="card-body">
+  {% if can_edit %}
+  <p class="text-muted">Например, крипта от покупателя. Это запись кассы, не зачисление на Telegram-баланс и не выручка от продажи.</p>
+  <form method="POST" action="/admin/finance?days={{ days }}" novalidate>
+    <input type="hidden" name="action" value="receipt"><input type="hidden" name="days" value="{{ days }}">
+    <div class="row g-3">
+      <div class="col-sm-6"><label class="form-label">Источник</label><select class="form-select" name="source" required><option value="crypto">Криптовалюта</option><option value="card">Карта</option><option value="cash">Наличные</option><option value="other">Другое</option></select></div>
+      <div class="col-sm-6"><label class="form-label">Telegram ID плательщика (необязательно)</label><input class="form-control" name="user_id" inputmode="numeric" placeholder="Например, 123456789"></div>
+      <div class="col-sm-4"><label class="form-label">Валюта</label><select class="form-select" name="currency"><option>USDT</option><option>USD</option><option>BYN</option><option>RUB</option></select></div>
+      <div class="col-sm-4"><label class="form-label">Сумма в валюте</label><input class="form-control" name="amount" type="number" min="0.01" step="0.01" required placeholder="39"></div>
+      <div class="col-sm-4"><label class="form-label">Эквивалент, RUB</label><input class="form-control" name="amount_rub" type="number" min="0.01" step="0.01" required placeholder="3500"></div>
+      <div class="col-sm-6"><label class="form-label">Дата поступления, МСК</label><input class="form-control" name="received_date" type="date" value="{{ today.isoformat() }}" required></div>
+      <div class="col-sm-6"><label class="form-label">Хэш / номер перевода</label><input class="form-control" name="reference" maxlength="128" placeholder="Для защиты от дублей"></div>
+      <div class="col-12"><label class="form-label">Комментарий</label><input class="form-control" name="note" maxlength="2000" placeholder="Кто отправил / за что"></div>
+      <div class="col-12"><button class="btn btn-primary w-100" type="submit">Записать поступление</button></div>
+    </div>
+  </form>
+  {% else %}<div class="alert alert-info mb-0">Просмотр доступен; для финансовых записей нужен доступ владельца.</div>{% endif %}
+</div></div></div>
+
+<div class="col-lg-6"><div class="card h-100"><div class="card-header"><h3 class="card-title">Записать закупку и источник</h3></div><div class="card-body">
+  {% if can_edit %}
+  <p class="text-muted">Запись не меняет цену или склад. Привязка к поступлению резервирует часть его RUB-эквивалента от повторного распределения.</p>
+  <form method="POST" action="/admin/finance?days={{ days }}" novalidate>
+    <input type="hidden" name="action" value="expense"><input type="hidden" name="days" value="{{ days }}">
+    <div class="mb-3"><label class="form-label">Товар</label><select class="form-select" name="product_id" required><option value="">Выберите товар</option>{% for product in products %}<option value="{{ product.id }}">{{ product.name }}</option>{% endfor %}</select></div>
+    <div class="row g-3">
+      <div class="col-sm-4"><label class="form-label">Количество</label><input class="form-control" name="quantity" type="number" min="1" max="100000" step="1" value="1" required></div>
+      <div class="col-sm-4"><label class="form-label">Ввод суммы</label><select class="form-select" name="cost_mode"><option value="total">Итого за закупку</option><option value="unit">Цена за штуку</option></select></div>
+      <div class="col-sm-4"><label class="form-label">Сумма, RUB</label><input class="form-control" name="amount" type="number" min="0.01" step="0.01" required placeholder="Например, 4500"></div>
+      <div class="col-12"><label class="form-label">Источник поступления (необязательно)</label><select class="form-select" name="receipt_id"><option value="">Не привязывать</option>{% for receipt in receipt_options %}<option value="{{ receipt.id }}">#{{ receipt.id }} · {{ receipt.source }} · {{ receipt.amount_display }} (свободно {{ receipt.remaining_display }} RUB){% if receipt.user_id %} · ID {{ receipt.user_id }}{% endif %}</option>{% endfor %}</select><div class="form-hint">Сумма закупки не может быть больше свободного остатка выбранного поступления.</div></div>
+      <div class="col-12"><button class="btn btn-outline-primary w-100" type="submit">Записать закупку</button></div>
+    </div>
+  </form>
+  {% else %}<div class="alert alert-info mb-0">Просмотр доступен; для финансовых записей нужен доступ владельца.</div>{% endif %}
+</div></div></div>
+
+<div class="col-lg-6"><div class="card h-100"><div class="card-header"><h3 class="card-title">Внешние поступления за выбранный период</h3></div><div class="table-responsive"><table class="table table-vcenter card-table finance-table"><thead><tr><th>Дата, МСК</th><th>Источник / ID</th><th>Получено</th><th>Внесено в RUB</th><th>Свободно</th></tr></thead><tbody>
+  {% for row in receipts %}<tr><td>{{ row.received_display }}</td><td>{{ row.source }}{% if row.user_id %}<br><small>ID {{ row.user_id }}</small>{% endif %}{% if row.reference %}<br><small>{{ row.reference }}</small>{% endif %}</td><td>{{ row.amount_display }}</td><td class="finance-number">{{ row.amount_rub_display }}</td><td class="finance-number">{{ row.remaining_display }}</td></tr>{% else %}<tr><td colspan="5" class="text-muted">Поступлений пока нет.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+
+<div class="col-lg-6"><div class="card h-100"><div class="card-header"><h3 class="card-title">Закупки за выбранный период</h3></div><div class="table-responsive"><table class="table table-vcenter card-table finance-table"><thead><tr><th>Дата, МСК</th><th>Товар / кол-во</th><th>Источник</th><th class="text-end">Сумма</th></tr></thead><tbody>
+  {% for row in expenses %}<tr><td>{{ row.created_display }}</td><td>{{ row.product_name }}<br><small>{{ row.quantity }} шт.</small></td><td>{% if row.finance_receipt_id %}Поступление #{{ row.finance_receipt_id }}{% else %}<span class="text-warning">Не привязано</span>{% endif %}</td><td class="text-end finance-number">{{ row.total_cost_display }} {{ currency }}</td></tr>{% else %}<tr><td colspan="4" class="text-muted">Закупок пока нет.</td></tr>{% endfor %}
+</tbody></table></div></div></div>
+{% endblock %}

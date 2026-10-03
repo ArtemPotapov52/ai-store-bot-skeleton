@@ -1,0 +1,225 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .expense-bar-track { min-height: 26px; background: var(--tblr-bg-surface-secondary); border-radius: 6px; overflow: hidden; }
+  .expense-bar { min-width: 3px; min-height: 26px; background: var(--tblr-orange); border-radius: 6px; }
+  .expense-day { display: grid; grid-template-columns: 52px minmax(90px, 1fr) 105px; gap: .75rem; align-items: center; }
+  .expense-day + .expense-day { margin-top: .65rem; }
+  .expense-table td, .expense-table th { vertical-align: middle; }
+  .expense-number { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  @media (max-width: 576px) {
+    .expense-day { grid-template-columns: 44px minmax(60px, 1fr) 82px; gap: .4rem; font-size: .8rem; }
+    .expense-number { font-size: .78rem; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="col-12">
+  <div class="card"><div class="card-body py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h2 class="mb-1">Расходы на закупки</h2>
+        <div class="text-muted">{{ period_start }} — {{ period_end }} · только вручную внесённые расходы</div>
+      </div>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="btn-group" role="group" aria-label="Раздел финансовой статистики">
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?days={{ period_days }}">Доходы</a>
+          <a class="btn btn-sm btn-primary" href="?days={{ period_days }}" aria-current="page">Расходы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/finance?days={{ period_days }}">Финансы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?section=bot_stats&amp;days={{ period_days }}">Статистика бота</a>
+        </div>
+        <div class="btn-group" role="group" aria-label="Период расходов">
+          {% for days, label in period_options.items() %}
+          <a class="btn btn-sm {% if days == period_days %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+             href="?days={{ days }}" {% if days == period_days %}aria-current="page"{% endif %}>{{ label }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Учтённые расходы</div>
+  <div class="h1 mb-1 expense-number">{{ summary_total_cost }} {{ currency }}</div>
+  <div class="text-muted">за выбранный период</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Закуплено единиц</div>
+  <div class="h1 mb-1 expense-number">{{ summary.quantity }}</div>
+  <div class="text-muted">по внесённым записям</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Средняя закупочная стоимость</div>
+  <div class="h1 mb-1 expense-number">{{ summary_average_unit_cost }} {{ currency }}</div>
+  <div class="text-muted">на одну учтённую единицу</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Записей</div>
+  <div class="h1 mb-1 expense-number">{{ summary.entries }}</div>
+  <div class="text-muted">история сохраняется отдельно от склада</div>
+</div></div></div>
+
+<div class="col-lg-7"><div class="card h-100">
+  <div class="card-header"><h3 class="card-title">Расходы по дням</h3></div>
+  <div class="card-body">
+    {% for day in daily %}
+    <div class="expense-day" title="{{ day.quantity }} шт.">
+      <div class="text-muted">{{ day.label }}</div>
+      <div class="expense-bar-track"><div class="expense-bar" style="width: {{ day.bar_width }}%" aria-label="{{ day.total_cost_display }} {{ currency }}"></div></div>
+      <div class="text-end expense-number">{{ day.total_cost_display }} {{ currency }}</div>
+    </div>
+    {% else %}
+    <div class="empty"><p class="empty-title">Пока нет расходов</p><p class="empty-subtitle text-muted">Добавьте первую закупку — дни без расходов здесь не показываются.</p></div>
+    {% endfor %}
+  </div>
+</div></div>
+
+<div class="col-lg-5"><div class="card h-100">
+  <div class="card-header"><h3 class="card-title">По товарам</h3></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table expense-table">
+    <thead><tr><th>Товар</th><th>Кол-во</th><th class="text-end">Средняя за ед.</th><th class="text-end">Расход</th></tr></thead>
+    <tbody>
+      {% for row in products_report %}
+      <tr><td>{{ row.name }}</td><td>{{ row.quantity }}</td><td class="text-end expense-number">{{ row.average_unit_cost_display }} {{ currency }}</td><td class="text-end expense-number">{{ row.total_cost_display }} {{ currency }}</td></tr>
+      {% else %}<tr><td colspan="4" class="text-muted">Нет записей за выбранный период.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div></div>
+
+<div class="col-12"><div class="card">
+  <div class="card-header"><h3 class="card-title">Текущий склад: если продать всё</h3></div>
+  <div class="card-body">
+    <div class="row row-cards g-3">
+      <div class="col-sm-6 col-xl-3"><div class="subheader">Конечный остаток</div>
+        <div class="h2 mb-0 expense-number">{{ inventory_summary.quantity }} шт.</div>
+        <div class="text-muted small">в {{ inventory_summary.finite_products }} активных товарах</div>
+      </div>
+      <div class="col-sm-6 col-xl-3"><div class="subheader">Потенциальная выручка</div>
+        <div class="h2 mb-0 expense-number">{{ inventory_summary.potential_revenue_display }} {{ currency }}</div>
+        <div class="text-muted small">по текущим ценам каталога</div>
+      </div>
+      <div class="col-sm-6 col-xl-3"><div class="subheader">Себестоимость, оценка</div>
+        <div class="h2 mb-0 expense-number">{{ inventory_summary.estimated_cost_display }} {{ currency }}</div>
+        <div class="text-muted small">для {{ inventory_summary.costed_quantity }} шт. по закупкам сегодня</div>
+      </div>
+      <div class="col-sm-6 col-xl-3"><div class="subheader">Валовая прибыль, оценка</div>
+        <div class="h2 mb-0 expense-number {% if inventory_summary.estimated_profit < 0 %}text-danger{% else %}text-success{% endif %}">{{ inventory_summary.estimated_profit_display }} {{ currency }}</div>
+        <div class="text-muted small">только по товарам с известной себестоимостью</div>
+      </div>
+    </div>
+
+    <div class="alert alert-info mt-3 mb-3" role="note">
+      Остаток считается по складу и позициям автовыдачи; выручка — по действующим ценам каталога.
+      Себестоимость и прибыль оцениваются только по закупкам, внесённым сегодня по МСК: берётся средняя цена сегодняшних закупок каждого товара. Записи расходов не уменьшают склад и не связывают партию с конкретными остатками.
+      {% if inventory_summary.unpriced_quantity %}<br><strong>Сегодня закупочная себестоимость не внесена для {{ inventory_summary.unpriced_quantity }} шт.</strong> (их потенциальная выручка — {{ inventory_summary.unpriced_revenue_display }} {{ currency }}, в прибыль она не включена).{% endif %}
+      {% if inventory_summary.unlimited_products %}<br>{{ inventory_summary.unlimited_products }} товара с неограниченной выдачей показано отдельно и не включено в конечные суммы.{% endif %}
+      Комиссии и возвраты не учитываются.
+    </div>
+
+    <div class="table-responsive"><table class="table table-vcenter card-table expense-table">
+      <thead><tr><th>Товар</th><th>Остаток</th><th class="text-end">Цена сейчас</th><th class="text-end">Выручка</th><th class="text-end">Средняя закупка сегодня</th><th class="text-end">Прибыль, оценка</th></tr></thead>
+      <tbody>
+        {% for row in inventory_items %}
+        <tr>
+          <td>{{ row.name }}</td>
+          {% if row.unlimited %}
+          <td><span class="badge bg-azure-lt">∞ неограниченно</span></td>
+          <td class="text-end expense-number">{{ row.sale_price_display }} {{ currency }}</td>
+          <td class="text-end text-muted">—</td><td class="text-end text-muted">—</td><td class="text-end text-muted">Не рассчитывается</td>
+          {% else %}
+          <td>{{ row.quantity }} шт.</td>
+          <td class="text-end expense-number">{{ row.sale_price_display }} {{ currency }}</td>
+          <td class="text-end expense-number">{{ row.potential_revenue_display }} {{ currency }}</td>
+          <td class="text-end expense-number">{% if row.average_unit_cost_display %}{{ row.average_unit_cost_display }} {{ currency }}{% else %}<span class="text-muted">Нет данных</span>{% endif %}</td>
+          <td class="text-end expense-number {% if row.estimated_profit is not none and row.estimated_profit < 0 %}text-danger{% elif row.estimated_profit is not none %}text-success{% endif %}">{% if row.estimated_profit_display is not none %}{{ row.estimated_profit_display }} {{ currency }}{% else %}<span class="text-muted">Не рассчитана</span>{% endif %}</td>
+          {% endif %}
+        </tr>
+        {% else %}<tr><td colspan="6" class="text-muted">Сейчас нет активных товаров с остатком на складе.</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </div>
+</div></div>
+
+<div class="col-lg-5"><div class="card h-100">
+  <div class="card-header"><h3 class="card-title">Добавить расход</h3></div>
+  <div class="card-body">
+    {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+    {% if result %}<div class="alert alert-success" role="status">{{ result }}</div>{% endif %}
+    {% if can_add_expense %}
+    <p class="text-muted">Запись используется только для расчёта расходов: цена товара, платежи и реальный склад не меняются.</p>
+    {% if products %}
+    <form method="POST" novalidate>
+      <input type="hidden" name="days" value="{{ period_days }}">
+      <div class="mb-3">
+        <label class="form-label" for="expense_product">Товар</label>
+        <select class="form-select" name="product_id" id="expense_product" required>
+          <option value="" disabled {% if not selected_product_id %}selected{% endif %}>Выберите товар</option>
+          {% for product in products %}<option value="{{ product.id }}" {% if product.id|string == selected_product_id %}selected{% endif %}>{{ product.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="expense_quantity">Количество</label>
+        <input class="form-control" name="quantity" id="expense_quantity" type="number" min="1" max="100000" step="1" inputmode="numeric" value="{{ quantity }}" placeholder="Например, 5" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="expense_cost_mode">Как указать сумму</label>
+        <select class="form-select" name="cost_mode" id="expense_cost_mode">
+          <option value="unit" {% if cost_mode == "unit" %}selected{% endif %}>Цена за одну штуку</option>
+          <option value="total" {% if cost_mode == "total" %}selected{% endif %}>Общая сумма закупки</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="expense_amount" id="expense_amount_label">Цена за одну штуку, {{ currency }}</label>
+        <input class="form-control" name="amount" id="expense_amount" type="number" min="0.01" max="9999999999.99" step="0.01" inputmode="decimal" value="{{ amount }}" placeholder="Например, 120" required>
+        <div class="form-hint" id="expense_total_preview">Введите количество и сумму закупки.</div>
+      </div>
+      <button class="btn btn-primary w-100" type="submit">Записать расход</button>
+    </form>
+    {% else %}<div class="alert alert-info mb-0">Нет активных товаров для выбора.</div>{% endif %}
+    {% else %}<div class="alert alert-info mb-0">У вас есть доступ к статистике, но нет права управления каталогом для добавления расходов.</div>{% endif %}
+  </div>
+</div></div>
+
+<div class="col-lg-7"><div class="card h-100">
+  <div class="card-header"><h3 class="card-title">Последние закупки</h3></div>
+  <div class="table-responsive"><table class="table table-vcenter card-table expense-table">
+    <thead><tr><th>Дата, МСК</th><th>Товар</th><th>Кол-во</th><th class="text-end">Сумма</th></tr></thead>
+    <tbody>
+      {% for row in history %}
+      <tr><td>{{ row.created_display }}</td><td>{{ row.product_name }}</td><td>{{ row.quantity }} × {{ row.average_unit_cost_display }}</td><td class="text-end expense-number">{{ row.total_cost_display }} {{ currency }}</td></tr>
+      {% else %}<tr><td colspan="4" class="text-muted">Расходов за этот период пока нет.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div></div>
+
+<script>
+(() => {
+  const quantity = document.getElementById("expense_quantity");
+  const amount = document.getElementById("expense_amount");
+  const mode = document.getElementById("expense_cost_mode");
+  const label = document.getElementById("expense_amount_label");
+  const preview = document.getElementById("expense_total_preview");
+  if (!quantity || !amount || !mode || !label || !preview) return;
+  const currency = {{ currency|tojson }};
+  const update = () => {
+    const count = Number(quantity.value);
+    const value = Number(amount.value.replace(",", "."));
+    if (mode.value === "unit") {
+      label.textContent = `Цена за одну штуку, ${currency}`;
+      preview.textContent = count > 0 && value > 0
+        ? `Итого: ${(count * value).toLocaleString("ru-RU", {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${currency}`
+        : "Итого = количество × цена за штуку.";
+    } else {
+      label.textContent = `Общая сумма закупки, ${currency}`;
+      preview.textContent = count > 0 && value > 0
+        ? `Средняя цена за штуку: ${(value / count).toLocaleString("ru-RU", {minimumFractionDigits: 2, maximumFractionDigits: 2})} ${currency}`
+        : "Введите итоговую сумму закупки.";
+    }
+  };
+  [quantity, amount, mode].forEach((input) => input.addEventListener("input", update));
+  mode.addEventListener("change", update);
+  update();
+})();
+</script>
+{% endblock %}

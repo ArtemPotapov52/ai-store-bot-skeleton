@@ -1,0 +1,76 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .activity-bar-track { min-height: 28px; background: var(--tblr-bg-surface-secondary); border-radius: 6px; overflow: hidden; }
+  .activity-bar { min-height: 28px; min-width: 2px; background: var(--tblr-primary); border-radius: 6px; }
+  .activity-day { display: grid; grid-template-columns: 58px minmax(80px, 1fr) 150px; gap: .75rem; align-items: center; }
+  .activity-day + .activity-day { margin-top: .65rem; }
+  .activity-number { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  @media (max-width: 576px) {
+    .activity-day { grid-template-columns: 46px minmax(48px, 1fr) 118px; gap: .4rem; font-size: .8rem; }
+    .activity-number { font-size: .78rem; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="col-12">
+  <div class="card"><div class="card-body py-3">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h2 class="mb-1">Статистика бота</h2>
+        <div class="text-muted">{{ period_start }} — {{ period_end }} · данные активности хранятся с момента включения статистики</div>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <div class="btn-group" role="group" aria-label="Раздел доходов">
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/revenue?days=2">Доходы</a>
+          <a class="btn btn-sm btn-outline-secondary" href="/admin/expenses?days={{ period_days }}">Расходы</a>
+          <a class="btn btn-sm btn-primary" href="?section=bot_stats&days={{ period_days }}" aria-current="page">Статистика бота</a>
+        </div>
+        <div class="btn-group" role="group" aria-label="Период статистики бота">
+          {% for days, label in period_options.items() %}
+          <a class="btn btn-sm {% if days == period_days %}btn-primary{% else %}btn-outline-secondary{% endif %}"
+             href="?section=bot_stats&days={{ days }}" {% if days == period_days %}aria-current="page"{% endif %}>{{ label }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Всего нажавших /start</div>
+  <div class="h1 mb-1 activity-number">{{ summary.total_starters }}</div>
+  <div class="text-muted">уникальные пользователи за всё время</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Активны сегодня</div>
+  <div class="h1 mb-1 activity-number">{{ summary.active_today }}</div>
+  <div class="text-muted">прошли проверку подписки и взаимодействовали</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Активны вчера</div>
+  <div class="h1 mb-1 activity-number">{{ summary.active_yesterday }}</div>
+  <div class="text-muted">уникальные активные пользователи</div>
+</div></div></div>
+<div class="col-sm-6 col-lg-3"><div class="card"><div class="card-body">
+  <div class="subheader">Клики и действия сегодня</div>
+  <div class="h1 mb-1 activity-number">{{ summary.clicks_today }}</div>
+  <div class="text-muted">/start + действия после проверки подписки</div>
+</div></div></div>
+
+<div class="col-12"><div class="card">
+  <div class="card-header"><h3 class="card-title">Активность по дням</h3></div>
+  <div class="card-body">
+    {% for day in daily %}
+    <div class="activity-day" title="{{ day.active_users }} активных пользователей">
+      <div class="text-muted">{{ day.label }}</div>
+      <div class="activity-bar-track"><div class="activity-bar" style="width: {{ day.bar_width }}%" aria-label="{{ day.clicks }} действий"></div></div>
+      <div class="text-end activity-number">{{ day.active_users }} акт. · {{ day.clicks }} кликов</div>
+    </div>
+    {% else %}
+    <div class="empty"><p class="empty-title">Пока нет данных</p><p class="empty-subtitle text-muted">Активность появится после взаимодействий пользователей с ботом.</p></div>
+    {% endfor %}
+    <div class="text-muted small mt-3">Активный пользователь — совершил хотя бы одно действие после успешной проверки подписки. Тексты сообщений и данные кнопок не сохраняются.</div>
+  </div>
+</div></div>
+{% endblock %}

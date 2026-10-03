@@ -1,0 +1,74 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-body">
+      <h2 class="mb-2">Напомнить о товаре</h2>
+      <p class="text-muted mb-0">Подготовьте сообщение покупателям о наличии товара. Перед рассылкой появится предпросмотр и отдельное подтверждение.</p>
+    </div>
+  </div>
+</div>
+
+{% if error %}<div class="col-12"><div class="alert alert-danger" role="alert">{{ error }}</div></div>{% endif %}
+{% if result %}<div class="col-12"><div class="alert alert-success" role="status">{{ result }}</div></div>{% endif %}
+
+<div class="col-xl-7">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">1. Выберите товар и цену</h3></div>
+    <div class="card-body">
+      {% if items %}
+      <form method="POST" novalidate>
+        <input type="hidden" name="action" value="preview">
+        <div class="mb-3">
+          <label class="form-label" for="reminder_item">Товар</label>
+          <select class="form-select" id="reminder_item" name="item_id" required>
+            <option value="" disabled {% if not selected_item_id %}selected{% endif %}>Выберите товар</option>
+            {% for item in items %}
+            <option value="{{ item.id }}" {% if item.id|string == selected_item_id %}selected{% endif %} {% if not item.is_infinite and item.quantity == 0 %}disabled{% endif %}>
+              {{ item.name }} — {{ item.price_display }} {{ currency }} · в наличии: {{ item.stock_display }}
+            </option>
+            {% endfor %}
+          </select>
+          <div class="form-hint">Точное наличие проверяется ещё раз перед отправкой.</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="reminder_price">Новая цена, {{ currency }}</label>
+          <input class="form-control" id="reminder_price" name="price" type="number" min="0.01" max="9999999999.99" step="0.01" inputmode="decimal" value="{{ price }}" placeholder="Оставьте пустым, чтобы не менять цену">
+          <div class="form-hint">Если указать другую цену, она обновится в каталоге только после подтверждения. При снижении в сообщении старая цена будет зачёркнута.</div>
+        </div>
+        <button class="btn btn-primary" type="submit">Показать предпросмотр</button>
+      </form>
+      {% else %}
+      <div class="alert alert-info mb-0">Активных товаров пока нет. Добавьте товар в каталоге, чтобы подготовить напоминание.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% if preview %}
+<div class="col-xl-5">
+  <div class="card border-primary">
+    <div class="card-header"><h3 class="card-title">2. Предпросмотр рассылки</h3></div>
+    <div class="card-body">
+      <div class="border rounded p-3 mb-3">
+        <div class="fw-bold mb-2">🔔 Товар ещё в наличии!</div>
+        <div class="mb-1">🏷️ <strong>{{ preview.name }}</strong></div>
+        <div class="mb-1">📦 В наличии: <strong>{{ preview.quantity }}</strong></div>
+        <div>💰 Цена: <strong>{{ preview.new_price }} {{ currency }}</strong></div>
+        <div class="text-primary mt-2">➡️ Перейти к товару</div>
+      </div>
+      {% if preview.price_changed %}
+      <div class="alert alert-warning">При подтверждении цена товара в каталоге изменится с {{ preview.old_price }} на {{ preview.new_price }} {{ currency }}.</div>
+      {% else %}
+      <p class="text-muted">Цена товара в каталоге останется без изменений.</p>
+      {% endif %}
+      <form method="POST">
+        <input type="hidden" name="action" value="send">
+        <input type="hidden" name="confirmation" value="{{ preview.token }}">
+        <button class="btn btn-danger w-100" type="submit">Подтвердить и отправить всем пользователям</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

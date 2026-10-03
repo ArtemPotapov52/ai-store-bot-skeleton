@@ -1,0 +1,26 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12"><div class="card"><div class="card-header"><h3 class="card-title">Импорт товаров в категорию</h3></div><div class="card-body">
+  <p>Выберите категорию и загрузите один файл <code>.txt</code> или <code>.md</code> в UTF-8. Каждый товар отделяйте строкой <code>---</code>. Импорт добавляет только новые названия; уже существующие товары не меняются.</p>
+  <div class="alert alert-info" role="status"><strong>Формат файла:</strong><pre class="mb-0 mt-2">Название: ChatGPT Plus на 1 месяц
+Цена: 90
+Описание: Подписка на один месяц.
+Количество: 10
+Текст выдачи:
+Логин: example@gmail.com
+Пароль: change-me
+---
+Название: Gemini Pro
+Цена: 120
+Описание: Доступ к подписке.
+Количество: 5
+Текст выдачи: Ссылка и инструкция для покупателя</pre></div>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  {% if result %}<div class="alert alert-success" role="status">{{ result }}</div>{% endif %}
+  <form method="POST" enctype="multipart/form-data" class="mt-3">
+    <div class="mb-3 row"><label class="form-label col-sm-2 col-form-label" for="category_id">Категория</label><div class="col-sm-10"><select class="form-select" name="category_id" id="category_id" required><option value="" selected disabled>Выберите категорию</option>{% for category in categories %}<option value="{{ category.id }}">{{ category.name }}</option>{% endfor %}</select></div></div>
+    <div class="mb-3 row"><label class="form-label col-sm-2 col-form-label" for="catalog_file">Файл с товарами</label><div class="col-sm-10"><input class="form-control" name="catalog_file" id="catalog_file" type="file" accept=".txt,.md,text/plain,text/markdown" required><small class="text-muted">Максимум 1 МБ и 200 товаров за один импорт.</small></div></div>
+    <div class="row"><div class="col-sm-2"></div><div class="col-sm-10"><button class="btn btn-primary" type="submit">Загрузить и добавить товары</button></div></div>
+  </form>
+</div></div></div>
+{% endblock %}

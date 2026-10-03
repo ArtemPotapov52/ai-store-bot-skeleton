@@ -1,0 +1,93 @@
+# Native Python deployment. No Docker image or Docker Compose resources.
+services:
+  - type: web
+    name: shopbot
+    runtime: python
+    region: frankfurt
+    plan: starter
+    numInstances: 1
+    autoDeployTrigger: 'off'
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: python -m alembic upgrade head
+    startCommand: python run.py
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 60
+    disk:
+      name: shopbot-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: TOKEN
+        sync: false
+      - key: OWNER_ID
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      # Payments & support: fill in the dashboard (empty = method disabled).
+      - key: CRYPTO_PAY_TOKEN
+        sync: false
+      - key: XROCKET_PAY_TOKEN
+        sync: false
+      - key: SUPPORT_USERNAME
+        sync: false
+      - key: PAYMENT_ADMIN_USERNAME
+        sync: false
+      - key: SHOP_NAME
+        value: My Store
+      - key: MANUAL_USDT_BEP20
+        sync: false
+      - key: MANUAL_TON
+        sync: false
+      - key: MANUAL_SOL
+        sync: false
+      - key: ADMIN_HOST
+        value: 0.0.0.0
+      - key: ADMIN_COOKIE_SECURE
+        value: '1'
+      - key: REDIS_ENABLED
+        value: '0'
+      - key: DEBUG
+        value: '0'
+      - key: TEST_PAYMENT_ENABLED
+        value: '0'
+      - key: WEBHOOK_ENABLED
+        value: '0'
+      - key: POLLING_TASKS_CONCURRENCY
+        value: '32'
+      - key: LOG_TO_STDOUT
+        value: '1'
+      - key: LOG_TO_FILE
+        value: '0'
+      - key: DB_POOL_SIZE
+        value: '5'
+      - key: DB_MAX_OVERFLOW
+        value: '5'
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: shopbot-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: shopbot-db
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: shopbot-db
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: shopbot-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: shopbot-db
+          property: password
+
+databases:
+  - name: shopbot-db
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: '16'
+    ipAllowList: []

@@ -1,0 +1,257 @@
+import asyncio
+import logging
+from datetime import datetime, timedelta, timezone
+
+from sqlalchemy import select, update, text
+
+logger = logging.getLogger(__name__)
+
+
+class RecoveryManager:
+    """Disaster Recovery Manager — payment recovery and health monitoring"""
+
+    PENDING_PAYMENT_INTERVAL = 300
+    HEALTH_CHECK_INTERVAL = 60
+    ERROR_BACKOFF = 30
+    # Fast auto-credit: fresh invoice payments are re-checked this often so a
+    # buyer who paid gets the "topped up" message without pressing "check".
+    AUTO_CREDIT_INTERVAL = 60
+    AUTO_CREDIT_WINDOW_HOURS = 3
+    AUTO_CREDIT_BATCH = 25
+    # Pendings older than this are dead (invoices expire in ~30 min) — stop polling them.
+    STALE_PENDING_HOURS = 24
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.recovery_tasks = []
+        self.running = False
+
+    async def start(self):
+        """Starting the recovery system"""
+        logger.info("Starting recovery manager...")
+        self.running = True
+
+        self.recovery_tasks.append(asyncio.create_task(
+            self._run_periodically(self.auto_credit_recent_payments, self.AUTO_CREDIT_INTERVAL)
+        ))
+
+        self.recovery_tasks.append(asyncio.create_task(
+            self._run_periodically(self.recover_pending_payments, self.PENDING_PAYMENT_INTERVAL)
+        ))
+
+        self.recovery_tasks.append(asyncio.create_task(
+            self._run_periodically(self.periodic_health_check, self.HEALTH_CHECK_INTERVAL)
+        ))
+
+    async def stop(self):
+        """Stopping the recovery system"""
+        self.running = False
+        for task in self.recovery_tasks:
+            task.cancel()
+        await asyncio.gather(*self.recovery_tasks, return_exceptions=True)
+        logger.info("Recovery manager stopped")
+
+    async def _run_periodically(self, step, interval: int):
+        """Run one pass of `step` every `interval` seconds until stopped"""
+        while self.running:
+            try:
+                await step()
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                logger.error(
+                    "Recovery task %s failed: %s",
+                    getattr(step, "__name__", step), e, exc_info=True,
+                )
+                await asyncio.sleep(self.ERROR_BACKOFF)
+                continue
+            await asyncio.sleep(interval)
+
+    async def auto_credit_recent_payments(self):
+        """Fast pass over fresh pending invoices (CryptoPay/xRocket).
+
+        Runs every minute: a buyer who just paid is credited and gets the
+        "balance topped up" message without pressing "check". Only recent
+        pendings are polled so provider rate limits are never at risk.
+        """
+        from bot.database import Database
+        from bot.database.models import Payments
+
+        payment_copies = []
+        async with Database().session() as s:
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=self.AUTO_CREDIT_WINDOW_HOURS)
+            result = await s.execute(
+                select(Payments).where(
+                    Payments.status == "pending",
+                    Payments.created_at >= cutoff,
+                    Payments.provider.in_(["cryptopay", "xrocket"])
+                ).order_by(Payments.created_at.desc()).limit(self.AUTO_CREDIT_BATCH)
+            )
+            for p in result.scalars().all():
+                payment_copies.append({
+                    'id': p.id,
+                    'provider': p.provider,
+                    'external_id': p.external_id,
+                    'user_id': p.user_id,
+                    'amount': p.amount,
+                    'currency': p.currency,
+                })
+
+        for pc in payment_copies:
+            await self._check_and_process_payment(pc)
+
+    async def recover_pending_payments(self):
+        """One sweep over CryptoPay/xRocket payments left pending for over an hour."""
+        from bot.database import Database
+        from bot.database.models import Payments
+
+        payment_copies = []
+        async with Database().session() as s:
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+            stale_cutoff = datetime.now(timezone.utc) - timedelta(hours=self.STALE_PENDING_HOURS)
+            stale = await s.execute(
+                select(Payments.id).where(
+                    Payments.status == "pending",
+                    Payments.created_at < stale_cutoff,
+                    Payments.provider.in_(["cryptopay", "xrocket"])
+                )
+            )
+            for (stale_id,) in stale.all():
+                await self._mark_payment_failed(stale_id)
+            result = await s.execute(
+                select(Payments).where(
+                    Payments.status == "pending",
+                    Payments.created_at < cutoff,
+                    Payments.created_at >= stale_cutoff,
+                    Payments.provider.in_(["cryptopay", "xrocket"])
+                )
+            )
+            for p in result.scalars().all():
+                payment_copies.append({
+                    'id': p.id,
+                    'provider': p.provider,
+                    'external_id': p.external_id,
+                    'user_id': p.user_id,
+                    'amount': p.amount,
+                    'currency': p.currency,
+                })
+
+        for pc in payment_copies:
+            await self._check_and_process_payment(pc)
+
+    async def _check_and_process_payment(self, payment):
+        """Verification and processing of a specific payment.
+
+        Args:
+            payment: dict with keys id, provider, external_id, user_id, amount, currency
+        """
+        from bot.database.methods.transactions import process_payment_with_referral
+        from bot.misc import EnvKeys
+        from bot.misc.services.payment import CryptoPayAPI, XRocketPayAPI
+        from bot.i18n import localize
+
+        p_id = payment['id'] if isinstance(payment, dict) else payment.id
+        p_provider = payment['provider'] if isinstance(payment, dict) else payment.provider
+        p_external_id = payment['external_id'] if isinstance(payment, dict) else payment.external_id
+        p_user_id = payment['user_id'] if isinstance(payment, dict) else payment.user_id
+        p_amount = payment['amount'] if isinstance(payment, dict) else payment.amount
+        p_currency = payment['currency'] if isinstance(payment, dict) else payment.currency
+
+        try:
+            if p_provider == "cryptopay" and EnvKeys.CRYPTO_PAY_TOKEN:
+                crypto = CryptoPayAPI()
+                info = await crypto.get_invoice(p_external_id)
+
+                if info.get("status") == "paid":
+                    credit_amount = p_amount
+                    try:
+                        from decimal import Decimal as _Decimal
+
+                        provider_amount = _Decimal(str(info.get("amount", p_amount)))
+                        if provider_amount != _Decimal(str(p_amount)):
+                            logger.warning(
+                                "Recovery amount mismatch for %s: pending=%s provider=%s",
+                                p_external_id, p_amount, provider_amount,
+                            )
+                            # A pending intent is bound to one exact amount.  A
+                            # partial or altered settlement must be investigated,
+                            # never silently converted into a different top-up.
+                            return
+                    except Exception:
+                        logger.debug("Could not parse provider amount for %s", p_external_id)
+                    success, _ = await process_payment_with_referral(
+                        user_id=p_user_id,
+                        amount=credit_amount,
+                        provider=p_provider,
+                        external_id=p_external_id,
+                        referral_percent=EnvKeys.REFERRAL_PERCENT,
+                        currency=p_currency,
+                    )
+
+                    if success:
+                        logger.info(f"Recovered payment {p_external_id}")
+                        try:
+                            await self.bot.send_message(
+                                p_user_id,
+                                localize("payments.topped_simple", amount=p_amount, currency=p_currency)
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to notify user {p_user_id}: {e}")
+
+                elif info.get("status") in ["expired", "failed"]:
+                    await self._mark_payment_failed(p_id)
+
+            elif p_provider == "xrocket" and EnvKeys.XROCKET_PAY_TOKEN:
+                xrocket = XRocketPayAPI()
+                info = await xrocket.get_invoice(str(p_external_id))
+
+                if info.get("status") == "paid":
+                    success, _ = await process_payment_with_referral(
+                        user_id=p_user_id,
+                        amount=p_amount,
+                        provider=p_provider,
+                        external_id=str(p_external_id),
+                        referral_percent=EnvKeys.REFERRAL_PERCENT,
+                        currency=p_currency,
+                    )
+
+                    if success:
+                        logger.info(f"Recovered payment {p_external_id}")
+                        try:
+                            await self.bot.send_message(
+                                p_user_id,
+                                localize("payments.topped_simple", amount=p_amount, currency=p_currency)
+                            )
+                        except Exception as e:
+                            logger.error(f"Failed to notify user {p_user_id}: {e}")
+
+                elif info.get("status") in ["expired", "cancelled"]:
+                    await self._mark_payment_failed(p_id)
+
+        except Exception as e:
+            logger.error(f"Error processing payment {p_id}: {e}")
+
+    async def _mark_payment_failed(self, payment_id: int):
+        """Mark payment as failed."""
+        from bot.database import Database
+        from bot.database.models import Payments
+
+        async with Database().session() as s:
+            await s.execute(
+                update(Payments).where(Payments.id == payment_id).values(status="failed")
+            )
+
+    async def periodic_health_check(self):
+        """One DB + cache health probe"""
+        from bot.database import Database
+
+        async with Database().session() as s:
+            await s.execute(text("SELECT 1"))
+
+        from bot.misc.caching.cache import get_cache_manager
+        cache = get_cache_manager()
+        if cache:
+            await cache.check_health()
+            await cache.set("health:check", "ok", ttl=60)
+
+        logger.debug("Health check passed: DB and cache are alive")

@@ -1,0 +1,20 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12"><div class="card"><div class="card-header"><h3 class="card-title">Поиск пользователя по Telegram ID</h3></div><div class="card-body">
+  <p class="text-muted">Введите числовой ID, который пользователь отправил боту. Username подтянется из Telegram, а ссылка на профиль будет показана всегда.</p>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  {% if user_result %}
+  <div class="alert alert-success" role="status">
+    <div><strong>Пользователь найден</strong></div>
+    <div class="mt-2">Telegram ID: <code>{{ user_result.telegram_id }}</code></div>
+    {% if user_result.display_name %}<div>Имя: <strong>{{ user_result.display_name }}</strong></div>{% endif %}
+    <div>Username: <strong>{{ user_result.username or "не указан" }}</strong></div>
+    <div class="mt-2"><a class="btn btn-primary" href="{{ user_result.profile_url }}" target="_blank" rel="noopener">Открыть профиль в Telegram</a></div>
+  </div>
+  {% endif %}
+  <form method="POST" class="mt-3">
+    <div class="mb-3 row"><label class="form-label col-sm-3 col-form-label" for="telegram_id">Telegram ID</label><div class="col-sm-9"><input class="form-control" name="telegram_id" id="telegram_id" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="32" value="{{ telegram_id }}" placeholder="Например, 123456789" required><small class="text-muted">Только положительный числовой ID из Telegram.</small></div></div>
+    <div class="row"><div class="col-sm-3"></div><div class="col-sm-9"><button class="btn btn-primary" type="submit">Найти пользователя</button></div></div>
+  </form>
+</div></div></div>
+{% endblock %}

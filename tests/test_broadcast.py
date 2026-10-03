@@ -1,0 +1,211 @@
+import pytest
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock
+
+from aiogram.exceptions import TelegramForbiddenError
+
+from bot.misc.services.broadcast_system import BroadcastManager, BroadcastStats
+from bot.misc.services.restock_notifier import notify_restock
+from bot.database.methods.create import subscribe_to_stock
+from bot.database.methods.read import is_subscribed_to_stock
+
+
+class TestBroadcastStats:
+
+    @pytest.mark.parametrize("total,sent,failed,expected", [
+        (10, 10, 0, 100.0),
+        (10, 7, 3, 70.0),
+        (0, 0, 0, 0),  # no division by zero on an empty broadcast
+    ])
+    def test_success_rate(self, total, sent, failed, expected):
+        assert BroadcastStats(total=total, sent=sent, failed=failed).success_rate == expected
+
+    def test_duration(self):
+        start = datetime(2026, 1, 1, 12, 0, 0)
+        end = datetime(2026, 1, 1, 12, 0, 10)
+        stats = BroadcastStats(start_time=start, end_time=end)
+        assert stats.duration == 10.0
+
+    def test_duration_none_when_not_finished(self):
+        stats = BroadcastStats(start_time=datetime.now())
+        assert stats.duration is None
+
+
+class TestBroadcastManager:
+
+    def setup_method(self):
+        self.bot = AsyncMock()
+        self.manager = BroadcastManager(
+            bot=self.bot,
+            batch_size=5,
+            batch_delay=0,  # No delay in tests
+            retry_count=1,
+        )
+
+    async def test_broadcast_all_success(self):
+        self.bot.send_message = AsyncMock(return_value=True)
+        user_ids = [1, 2, 3, 4, 5]
+        stats = await self.manager.broadcast(user_ids, "Hello!")
+        assert stats.sent == 5
+        assert stats.failed == 0
+        assert stats.total == 5
+
+    async def test_broadcast_partial_failure(self):
+        call_count = 0
+
+        async def send_with_failures(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count % 3 == 0:
+                raise TelegramForbiddenError(method=MagicMock(), message="Forbidden")
+            return True
+
+        self.bot.send_message = send_with_failures
+        user_ids = list(range(1, 10))
+        stats = await self.manager.broadcast(user_ids, "Hello!")
+        assert stats.sent > 0
+        assert stats.blocked > 0
+        assert stats.sent + stats.failed + stats.blocked == stats.total
+
+    async def test_broadcast_forbidden_user(self):
+        self.bot.send_message = AsyncMock(
+            side_effect=TelegramForbiddenError(method=MagicMock(), message="Forbidden")
+        )
+        stats = await self.manager.broadcast([1, 2, 3], "Hello!")
+        assert stats.sent == 0
+        assert stats.blocked == 3
+        assert stats.failed == 0
+
+    async def test_broadcast_cancel(self):
+        send_count = 0
+
+        async def slow_send(**kwargs):
+            nonlocal send_count
+            send_count += 1
+            return True
+
+        self.bot.send_message = slow_send
+        # Use batch_size=2 so multiple batches
+        self.manager.batch_size = 2
+        user_ids = list(range(1, 11))
+
+        # Cancel after first batch via progress callback
+        def cancel_after_first(stats):
+            if stats.sent >= 2:
+                self.manager.cancel()
+
+        stats = await self.manager.broadcast(
+            user_ids, "Hello!", progress_callback=cancel_after_first
+        )
+        # Should have cancelled before sending to all 10
+        assert stats.sent < 10
+
+    async def test_broadcast_progress_callback(self):
+        self.bot.send_message = AsyncMock(return_value=True)
+        self.manager.batch_size = 3
+        progress_calls = []
+
+        def on_progress(stats):
+            progress_calls.append(stats.sent)
+
+        user_ids = list(range(1, 7))
+        await self.manager.broadcast(
+            user_ids, "Hello!", progress_callback=on_progress
+        )
+        assert len(progress_calls) == 2  # 2 batches of 3
+
+    async def test_broadcast_stats_have_times(self):
+        self.bot.send_message = AsyncMock(return_value=True)
+        stats = await self.manager.broadcast([1], "Hello!")
+        assert stats.start_time is not None
+        assert stats.end_time is not None
+        assert stats.duration is not None
+        assert stats.duration >= 0
+
+
+class TestRestockNotifier:
+    async def test_notifies_subscribers_and_clears_them(self, mock_bot, user_factory, item_factory):
+
+        await user_factory(telegram_id=980001)
+        await user_factory(telegram_id=980002)
+        await item_factory(name="RestockMe", price=10, values=[])
+        await subscribe_to_stock(980001, "RestockMe")
+        await subscribe_to_stock(980002, "RestockMe")
+
+        sent = await notify_restock(mock_bot, "RestockMe")
+
+        assert sent == 2
+        assert mock_bot.send_message.await_count == 2
+        recipients = {c.kwargs["chat_id"] for c in mock_bot.send_message.await_args_list}
+        assert recipients == {980001, 980002}
+
+        # Subscriptions are consumed, so a second restock stays quiet.
+        assert await is_subscribed_to_stock(980001, "RestockMe") is False
+        assert await notify_restock(mock_bot, "RestockMe") == 0
+
+    async def test_notification_carries_a_close_button(self, mock_bot, user_factory, item_factory):
+
+        await user_factory(telegram_id=980020)
+        await item_factory(name="ClosableItem", price=10, values=[])
+        await subscribe_to_stock(980020, "ClosableItem")
+
+        await notify_restock(mock_bot, "ClosableItem")
+
+        markup = mock_bot.send_message.await_args.kwargs["reply_markup"]
+        cbs = [b.callback_data for row in markup.inline_keyboard for b in row]
+        assert cbs == ["close"]
+
+    async def test_no_subscribers_sends_nothing(self, mock_bot, item_factory):
+
+        await item_factory(name="NobodyWaiting", price=10, values=[])
+        assert await notify_restock(mock_bot, "NobodyWaiting") == 0
+        mock_bot.send_message.assert_not_awaited()
+
+    async def test_notify_all_includes_non_subscribers_without_duplicates(
+            self, mock_bot, user_factory, item_factory
+    ):
+        await user_factory(telegram_id=980030)
+        await user_factory(telegram_id=980031)
+        await user_factory(telegram_id=980032)
+        await item_factory(name="BroadcastRestock", price=10, values=[])
+        await subscribe_to_stock(980030, "BroadcastRestock")
+
+        sent = await notify_restock(mock_bot, "BroadcastRestock", notify_all=True)
+
+        assert sent == 3
+        recipients = [call.kwargs["chat_id"] for call in mock_bot.send_message.await_args_list]
+        assert recipients == [980030, 980031, 980032]
+        assert await is_subscribed_to_stock(980030, "BroadcastRestock") is False
+
+    async def test_notification_reports_the_number_of_new_lots(
+            self, mock_bot, user_factory, item_factory
+    ):
+        await user_factory(telegram_id=980040)
+        await item_factory(name="CountedRestock", price=10, values=[])
+        await subscribe_to_stock(980040, "CountedRestock")
+
+        await notify_restock(mock_bot, "CountedRestock", added_count=7)
+
+        assert "7" in mock_bot.send_message.await_args.kwargs["text"]
+
+    async def test_blocked_user_does_not_break_the_rest(self, mock_bot, user_factory, item_factory):
+
+        await user_factory(telegram_id=980010)
+        await user_factory(telegram_id=980011)
+        await item_factory(name="HalfBlocked", price=10, values=[])
+        await subscribe_to_stock(980010, "HalfBlocked")
+        await subscribe_to_stock(980011, "HalfBlocked")
+
+        async def _send(chat_id, **kwargs):
+            if chat_id == 980010:
+                raise TelegramForbiddenError(method=MagicMock(), message="bot was blocked")
+            return True
+
+        mock_bot.send_message = AsyncMock(side_effect=_send)
+
+        sent = await notify_restock(mock_bot, "HalfBlocked")
+
+        assert sent == 1   # the reachable one still got it, no exception escaped
+
+    async def test_unknown_item_is_a_noop(self, mock_bot):
+        assert await notify_restock(mock_bot, "NoSuchItemAtAll") == 0

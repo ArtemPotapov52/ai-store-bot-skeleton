@@ -1,0 +1,289 @@
+import pytest
+import math
+from decimal import Decimal
+from unittest.mock import patch, AsyncMock, MagicMock
+
+from bot.misc.services.payment import (
+    currency_to_stars,
+    resolve_stars_per_unit,
+    _minor_units_for,
+    send_stars_invoice,
+    send_fiat_invoice,
+    CryptoPayAPI,
+    CryptoPayAPIError,
+)
+
+
+class TestCurrencyToStars:
+
+    @pytest.mark.parametrize("rate,amount,expected", [
+        (0.91, 100, 91),
+        (0.33, 10, 4),        # 3.3 rounds up
+        (0.91, 0, 0),
+        (0.91, 100000, math.ceil(100000 * 0.91)),
+        (1.0, 50, 50),        # already integral
+    ])
+    def test_conversion(self, rate, amount, expected):
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.STARS_PER_VALUE = rate
+            assert currency_to_stars(amount) == expected
+
+
+class TestResolveStarsPerUnit:
+
+    async def test_fixed_rub_price_per_star_has_priority(self):
+        """A configured RUB price must not be replaced by a live fallback."""
+        from bot.misc.services import payment as pay_mod
+
+        mock_x = AsyncMock()
+        mock_x.get_rate_to_asset = AsyncMock(return_value=Decimal("0.0119"))
+        with patch.object(pay_mod, "XRocketPayAPI", return_value=mock_x), \
+             patch("bot.misc.services.payment.EnvKeys") as env:
+            env.STARS_RUB_PER_STAR = 1.92
+            env.STARS_PER_VALUE = 1 / 1.92
+            env.STARS_USD_VALUE = "0.022"
+            env.PAY_CURRENCY = "RUB"
+            env.XROCKET_PAY_TOKEN = "tok"
+            rate = await resolve_stars_per_unit()
+
+        assert rate == pytest.approx(1 / 1.92)
+        mock_x.get_rate_to_asset.assert_not_awaited()
+
+
+    async def test_live_rate_from_xrocket(self):
+        """1 RUB at 84.5/USDT and $0.013/star -> ~0.909 stars per RUB."""
+        from bot.misc.services import payment as pay_mod
+
+        pay_mod._stars_rate_cache.update(value=None, at=0.0)
+        mock_x = AsyncMock()
+        mock_x.get_rate_to_asset = AsyncMock(return_value=Decimal("0.0118343"))
+
+        with patch.object(pay_mod, "XRocketPayAPI", return_value=mock_x), \
+             patch("bot.misc.services.payment.EnvKeys") as env:
+            env.STARS_PER_VALUE = 0.91
+            env.STARS_USD_VALUE = "0.013"
+            env.PAY_CURRENCY = "RUB"
+            env.XROCKET_PAY_TOKEN = "tok"
+            rate = await resolve_stars_per_unit()
+
+        assert rate == pytest.approx(0.0118343 / 0.013, rel=1e-3)
+        pay_mod._stars_rate_cache.update(value=None, at=0.0)
+
+    async def test_fallback_without_xrocket_token(self):
+        with patch("bot.misc.services.payment.EnvKeys") as env:
+            env.STARS_PER_VALUE = 0.91
+            env.STARS_USD_VALUE = "0.013"
+            env.PAY_CURRENCY = "RUB"
+            env.XROCKET_PAY_TOKEN = ""
+            assert await resolve_stars_per_unit() == 0.91
+
+    async def test_fallback_on_api_error(self):
+        from bot.misc.services import payment as pay_mod
+
+        pay_mod._stars_rate_cache.update(value=None, at=0.0)
+        mock_x = AsyncMock()
+        mock_x.get_rate_to_asset = AsyncMock(side_effect=Exception("down"))
+
+        with patch.object(pay_mod, "XRocketPayAPI", return_value=mock_x), \
+             patch("bot.misc.services.payment.EnvKeys") as env:
+            env.STARS_PER_VALUE = 0.91
+            env.STARS_USD_VALUE = "0.013"
+            env.PAY_CURRENCY = "RUB"
+            env.XROCKET_PAY_TOKEN = "tok"
+            assert await resolve_stars_per_unit() == 0.91
+
+    async def test_usd_currency_needs_no_fx(self):
+        with patch("bot.misc.services.payment.EnvKeys") as env:
+            env.STARS_PER_VALUE = 0.91
+            env.STARS_USD_VALUE = "0.013"
+            env.PAY_CURRENCY = "USD"
+            env.XROCKET_PAY_TOKEN = ""
+            assert await resolve_stars_per_unit() == pytest.approx(1 / 0.013, rel=1e-3)
+
+
+class TestPrefilledLinksEncoding:
+
+    def test_no_plus_for_spaces(self):
+        from bot.keyboards.inline import support_prefilled_link
+
+        with patch("bot.keyboards.inline.EnvKeys") as env:
+            env.SHOP_NAME = "My Store"
+            env.SUPPORT_USERNAME = "sup"
+            link = support_prefilled_link("sup")
+
+        text_part = link.split("?text=", 1)[1]
+        assert "+" not in text_part
+        assert "%20" in text_part
+
+
+class TestMinorUnitsFor:
+
+    @pytest.mark.parametrize("currency,expected", [
+        ("USD", 100),
+        ("RUB", 100),
+        ("EUR", 100),
+        ("JPY", 1),   # zero-decimal currency
+        ("KRW", 1),
+        ("jpy", 1),   # lookup is case-insensitive
+        ("usd", 100),
+    ])
+    def test_minor_units(self, currency, expected):
+        assert _minor_units_for(currency) == expected
+
+
+class TestSendStarsInvoice:
+
+    async def test_fixed_rub_rate_charges_29_stars_for_55_rub(self):
+        bot = AsyncMock()
+        mock_x = AsyncMock()
+        mock_x.get_rate_to_asset = AsyncMock(return_value=Decimal("0.0119"))
+
+        with patch('bot.misc.services.payment.XRocketPayAPI', return_value=mock_x), \
+             patch('bot.misc.services.payment.EnvKeys') as env:
+            env.STARS_RUB_PER_STAR = 1.92
+            env.STARS_PER_VALUE = 1 / 1.92
+            env.STARS_USD_VALUE = "0.022"
+            env.PAY_CURRENCY = "RUB"
+            env.XROCKET_PAY_TOKEN = "tok"
+            await send_stars_invoice(bot, chat_id=123, amount=55)
+
+        prices = bot.send_invoice.call_args[1]['prices']
+        assert prices[0].amount == 29
+
+    async def test_sends_correct_invoice(self):
+        bot = AsyncMock()
+
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.STARS_PER_VALUE = 0.91
+            env.PAY_CURRENCY = "RUB"
+            await send_stars_invoice(bot, chat_id=123, amount=100)
+
+        bot.send_invoice.assert_called_once()
+        call_kwargs = bot.send_invoice.call_args[1]
+        assert call_kwargs['currency'] == "XTR"
+        assert call_kwargs['provider_token'] == ""
+        assert call_kwargs['chat_id'] == 123
+
+    async def test_stars_price_amount(self):
+        bot = AsyncMock()
+
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.STARS_PER_VALUE = 0.91
+            env.PAY_CURRENCY = "RUB"
+            await send_stars_invoice(bot, chat_id=123, amount=100)
+
+        prices = bot.send_invoice.call_args[1]['prices']
+        assert prices[0].amount == math.ceil(100 * 0.91)
+
+
+class TestSendFiatInvoice:
+
+    async def test_sends_correct_invoice(self):
+        bot = AsyncMock()
+
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.TELEGRAM_PROVIDER_TOKEN = "test_token"
+            env.PAY_CURRENCY = "RUB"
+            await send_fiat_invoice(bot=bot, chat_id=456, amount=200)
+
+        bot.send_invoice.assert_called_once()
+        call_kwargs = bot.send_invoice.call_args[1]
+        assert call_kwargs['currency'] == "RUB"
+        assert call_kwargs['provider_token'] == "test_token"
+        # RUB has minor units: 200 * 100 = 20000
+        assert call_kwargs['prices'][0].amount == 20000
+
+    async def test_zero_decimal_currency(self):
+        bot = AsyncMock()
+
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.TELEGRAM_PROVIDER_TOKEN = "test_token"
+            env.PAY_CURRENCY = "JPY"
+            await send_fiat_invoice(bot=bot, chat_id=456, amount=200)
+
+        prices = bot.send_invoice.call_args[1]['prices']
+        # JPY has no minor units: 200 * 1 = 200
+        assert prices[0].amount == 200
+
+    async def test_missing_provider_token_raises(self):
+        bot = AsyncMock()
+
+        with patch('bot.misc.services.payment.EnvKeys') as env:
+            env.TELEGRAM_PROVIDER_TOKEN = ""
+            with pytest.raises(RuntimeError, match="TELEGRAM_PROVIDER_TOKEN"):
+                await send_fiat_invoice(bot=bot, chat_id=456, amount=200)
+
+
+class TestCryptoPayAPI:
+
+    async def test_api_error_raises(self):
+        api = CryptoPayAPI()
+
+        mock_response = AsyncMock()
+        mock_response.json = AsyncMock(return_value={
+            "ok": False,
+            "error": {"code": 400, "name": "INVALID_PARAMS"}
+        })
+        mock_response.raise_for_status = MagicMock()
+        mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+        mock_response.__aexit__ = AsyncMock(return_value=False)
+
+        mock_session = AsyncMock()
+        mock_session.post = MagicMock(return_value=mock_response)
+        mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session.__aexit__ = AsyncMock(return_value=False)
+
+        with patch('aiohttp.ClientSession', return_value=mock_session):
+            with pytest.raises(CryptoPayAPIError) as exc_info:
+                await api.create_invoice(amount=100, expires_in=1800)
+            assert exc_info.value.code == 400
+            assert exc_info.value.name == "INVALID_PARAMS"
+
+    async def test_fiat_invoice_sends_exact_amount_and_currency(self):
+        api = CryptoPayAPI()
+        captured = {}
+
+        async def fake_request(method, params):
+            captured.update(method=method, params=params)
+            return {"ok": True, "result": {"invoice_id": 17, "amount": "400", "fiat": "RUB"}}
+
+        with patch.object(api, "_request", side_effect=fake_request):
+            invoice = await api.create_invoice(
+                amount=Decimal("400.00"),
+                expires_in=1800,
+                currency="rub",
+                accepted_assets="TON,USDT,BTC",
+            )
+
+        assert invoice["invoice_id"] == 17
+        assert captured == {
+            "method": "createInvoice",
+            "params": {
+                "currency_type": "fiat",
+                "fiat": "RUB",
+                "amount": "400",
+                "accepted_assets": "TON,USDT,BTC",
+                "expires_in": 1800,
+            },
+        }
+
+    async def test_fiat_invoice_uses_runtime_currency_when_omitted(self):
+        api = CryptoPayAPI()
+        captured = {}
+
+        async def fake_request(method, params):
+            captured.update(params)
+            return {"ok": True, "result": {}}
+
+        with patch("bot.misc.services.payment.EnvKeys") as env:
+            env.PAY_CURRENCY = "EUR"
+            with patch.object(api, "_request", side_effect=fake_request):
+                await api.create_invoice(amount=12.5, expires_in=60)
+
+        assert captured["fiat"] == "EUR"
+        assert captured["amount"] == "12.5"
+
+    def test_crypto_pay_api_error_str(self):
+        err = CryptoPayAPIError(code=401, name="UNAUTHORIZED")
+        assert "401" in str(err)
+        assert "UNAUTHORIZED" in str(err)

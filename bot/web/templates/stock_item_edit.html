@@ -1,0 +1,8 @@
+{% extends "sqladmin/edit.html" %}
+
+{% block edit_form %}
+<div class="alert alert-info" role="status">
+  <p class="mb-0">Эта запись — одна единица остатка. После покупки ограниченная единица автоматически удаляется, а покупатель получает её содержимое в Telegram.</p>
+</div>
+{{ super() }}
+{% endblock %}

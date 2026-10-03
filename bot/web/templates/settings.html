@@ -1,0 +1,18 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="col-12"><div class="card"><div class="card-header"><h3 class="card-title">Настройки бота</h3></div><div class="card-body">
+  <p>Здесь выбирается основная валюта магазина. Она используется в каталоге, профиле, балансе, истории операций и новых платёжных счетах.</p>
+  <div class="alert alert-info" role="status">
+    <strong>Как работает CryptoBot.</strong> Если цена товара 400 RUB, в CryptoBot отправляется фиатная сумма <b>400 RUB</b>. Сервис сам показывает покупателю точный эквивалент в доступных криптовалютах и фиксирует курс для счёта.
+  </div>
+  <div class="alert alert-warning" role="status">
+    При смене валюты числовые цены и уже накопленные балансы не пересчитываются автоматически. Перед переключением проверьте цены товаров и действующие балансы, чтобы они соответствовали выбранной валюте.
+  </div>
+  {% if error %}<div class="alert alert-danger" role="alert">{{ error }}</div>{% endif %}
+  {% if result %}<div class="alert alert-success" role="status">{{ result }}</div>{% endif %}
+  <form method="POST" class="mt-3">
+    <div class="mb-3 row"><label class="form-label col-sm-3 col-form-label" for="pay_currency">Валюта магазина</label><div class="col-sm-9"><select class="form-select" name="pay_currency" id="pay_currency" required>{% for code, label in choices %}<option value="{{ code }}" {% if code == current %}selected{% endif %}>{{ label }}</option>{% endfor %}</select><small class="text-muted">Сейчас выбрано: <b>{{ current }}</b></small></div></div>
+    <div class="row"><div class="col-sm-3"></div><div class="col-sm-9"><button class="btn btn-primary" type="submit">Сохранить валюту</button></div></div>
+  </form>
+</div></div></div>
+{% endblock %}

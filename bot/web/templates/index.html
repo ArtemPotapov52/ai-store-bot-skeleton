@@ -1,0 +1,78 @@
+{% extends "sqladmin/layout.html" %}
+{% block content %}
+<div class="container-xl py-3">
+  <div class="mb-3">
+    <h2 class="mb-1">Панель управления Telegram-магазином</h2>
+    <div class="text-muted">Здесь меняются каталог, остатки и настройки магазина. Все изменения фиксируются в журнале, а бот обновляет данные автоматически.</div>
+  </div>
+
+  <div class="row row-cards">
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">📦 Как работает продажа</h3></div>
+        <div class="card-body">
+          <ol class="mb-2">
+            <li>Создайте или выберите <b>категорию</b>.</li>
+            <li>Создайте <b>товар</b>: название, цену, описание и категорию.</li>
+            <li>Добавьте <b>остаток и автовыдачу</b> — текст, который бот отправит после оплаты.</li>
+          </ol>
+          <p class="mb-1"><b>Одна единица склада — одна покупка.</b></p>
+          <p class="mb-0 text-muted">В поле «Текст, который получит покупатель» можно вставить логин, пароль, ключ, ссылку и инструкцию одним большим сообщением. Для десяти аккаунтов добавьте десять единиц склада.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">🔐 Роли и доступ</h3></div>
+        <div class="card-body">
+          <p>В разделе <b>Пользователи</b> можно посмотреть баланс, роль и блокировку. В разделе <b>Роли и права</b> настраивается доступ сотрудников.</p>
+          <p class="mb-0 text-muted">Для ежедневного управления доступом удобнее использовать меню администратора внутри Telegram-бота. Числовое поле прав в веб-панели меняйте только если точно понимаете его назначение.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">🧭 Разделы панели</h3></div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li><b>Пользователи</b> — баланс, роль и блокировка.</li>
+            <li><b>Категории / Товары / Склад и автовыдача</b> — витрина и остаток.</li>
+            <li><b>Промокоды</b> — только пополнение баланса, срок и лимит.</li>
+            <li><b>Покупки / Платежи / Операции с балансом</b> — финансовая история.</li>
+            <li><b>Журнал действий</b> — запись изменений в админке.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">💡 Перед публикацией товара</h3></div>
+        <div class="card-body">
+          <ul class="mb-0">
+            <li>Проверьте цену и описание, которые увидит покупатель.</li>
+            <li>Добавьте хотя бы одну единицу склада, иначе товар нельзя будет выдать автоматически.</li>
+            <li>Для аккаунтов и ключей оставляйте «Выдавать без ограничения» выключенным.</li>
+            <li>Укажите статус «предзаказ ⏳», если продаёте товар без мгновенной выдачи.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card border-primary">
+        <div class="card-header"><h3 class="card-title">🔎 Поиск пользователя по Telegram ID</h3></div>
+        <div class="card-body">
+          <p class="text-muted">Введи ID, который пришёл от бота — панель покажет username и ссылку на профиль Telegram.</p>
+          <form method="POST" action="/admin/user-search" class="row g-2 align-items-end">
+            <div class="col-md-8"><label class="form-label" for="dashboard_telegram_id">Telegram ID</label><input class="form-control" name="telegram_id" id="dashboard_telegram_id" type="text" inputmode="numeric" pattern="[0-9]+" maxlength="32" placeholder="Например, 123456789" required></div>
+            <div class="col-md-4"><button class="btn btn-primary w-100" type="submit">Найти пользователя</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

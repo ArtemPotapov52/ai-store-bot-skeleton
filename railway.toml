@@ -1,0 +1,14 @@
+# Railway config-as-code for the My Store bot.
+# Service settings in the dashboard must use the Railpack builder (not Docker),
+# attach a PostgreSQL plugin, and set the env vars below. Exactly ONE replica:
+# two pollers with the same Telegram token fight with 409 Conflict.
+[build]
+builder = "RAILPACK"
+buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+startCommand = "python -m alembic upgrade head && python run.py"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"

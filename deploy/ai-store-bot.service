@@ -1,0 +1,24 @@
+[Unit]
+Description=AI Store Telegram bot
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aistore
+Group=aistore
+WorkingDirectory=/opt/ai-store-bot
+EnvironmentFile=/opt/ai-store-bot/.env
+ExecStart=/opt/ai-store-bot/.venv/bin/python /opt/ai-store-bot/run.py
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=45
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ai-store-bot/logs /opt/ai-store-bot/data
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

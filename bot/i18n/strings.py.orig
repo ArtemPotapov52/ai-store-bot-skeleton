@@ -1,0 +1,2096 @@
+DEFAULT_LOCALE = "ru"
+
+TRANSLATIONS: dict[str, dict[str, str]] = {
+    "ru": {
+        # === Common Buttons ===
+        "btn.shop": "Товары",
+        "btn.search": "🔍 Поиск по каталогу",
+        "btn.rules": "Правила / Соглашение",
+        "btn.profile": "Профиль",
+        "btn.support": "Поддержка",
+        "btn.language": "Language / Язык",
+        "btn.faq": "FAQ",
+        "btn.agreement": "Соглашения",
+        "btn.terms": "📄 Пользовательское соглашение",
+        "btn.privacy": "🔒 Политика конфиденциальности",
+        "btn.orders": "Заказы",
+        "btn.channel": "ℹ Новостной канал",
+        "btn.admin_menu": "🎛 Панель администратора",
+        "btn.back": "Назад",
+        "btn.to_menu": "🏠 В меню",
+        "btn.main_menu": "Главное меню",
+        "btn.close": "✖ Закрыть",
+        "btn.buy": "🛒 Купить",
+        "btn.buy_balance": "💳 Купить с баланса",
+        "btn.buy_bulk": "📦 Оптом от {min_qty} (−{pct}%)",
+        "btn.pay_balance": "✅ Оплатить с баланса",
+        "btn.topup_balance": "💰 Пополнить баланс",
+        "btn.qty_confirm": "✅ Перейти к оплате",
+        "btn.yes": "✅ Да",
+        "btn.no": "❌ Нет",
+        "btn.check": "🔄 Проверить",
+        "btn.check_subscription": "🔄 Проверить подписку",
+        "btn.community": "💬 Чат сообщества",
+        "btn.continue_without_community": "Продолжить без подписки",
+        "btn.pay": "💳 Оплатить",
+        "btn.check_payment": "🔄 Проверить оплату",
+        "btn.pay.crypto": "💎 CryptoBot",
+        "btn.pay.xrocket": "🚀 xRocket",
+        "btn.pay.manual_crypto": "💱 Криптой на кошелёк",
+        "btn.pay.sbp_card": "🏦 СБП/КАРТА",
+        "btn.pay.admin": "👤 Оплата через администратора",
+        "btn.pay.admin.open": "✉️ Написать @{username}",
+        "btn.pay.stars": "⭐ Telegram Stars",
+        "btn.pay.tg": "💸 Telegram Payments",
+        "btn.pay.test": "🧪 Тестовая оплата",
+
+        # === Admin Buttons (user management shortcuts) ===
+        "btn.admin.view_profile": "👁 Посмотреть профиль",
+        "btn.admin.promote": "⬆️ Назначить администратором",
+        "btn.admin.demote": "⬇️ Снять администратора",
+        "btn.admin.replenish_user": "💸 Пополнить баланс",
+        "btn.admin.deduct_user": "💳 Списать с баланса",
+        "btn.admin.block": "🚫 Заблокировать",
+        "btn.admin.unblock": "✅ Разблокировать",
+
+        # === Titles / Generic Texts ===
+        "menu.title": (
+            "👋 Привет, <a href='tg://user?id={id}'>{name}</a>!\n\n"
+            "Добро пожаловать в магазин <b>{shop_name}</b> 🛒\n\n"
+            "Выберите нужную категорию, пополните баланс при необходимости "
+            "и оформите заказ в несколько нажатий."
+        ),
+        "profile.caption": "👤 <b>ПРОФИЛЬ</b>",
+        "legal.title": "📄 <b>Документы магазина</b>\n\nВыберите документ, который хотите прочитать.",
+        "faq.not_set": "❌ FAQ пока не заполнен",
+        "support.not_set": "❌ Контакт поддержки пока не настроен",
+        "support.prefilled": "Привет! Я из {shop_name}, у меня такая проблема: ",
+        "language.title": "🌐 Выберите язык / Choose your language",
+        "language.changed": "✅ Язык изменён",
+
+        # === Subscription Flow ===
+        "subscribe.prompt": "Для начала подпишитесь на новостной канал",
+        "subscribe.open_channel": "Открыть канал",
+        "subscribe.community_required": "Чтобы пользоваться ботом, также необходимо вступить в чат.",
+        "subscribe.community_optional": (
+            "Также можно вступить в чат. Для вас подписка на него необязательна — "
+            "можно продолжить без неё."
+        ),
+
+        # === Profile ===
+        "profile.referral_id": "👤 <b>Реферал</b> — <code>{id}</code>",
+        "btn.replenish": "Пополнить баланс",
+        "btn.referral": "Реферальная система",
+        "btn.purchased": "🎁 Купленные товары",
+
+        # === Profile Info Lines ===
+        "profile.id": "🆔 <b>ID</b> — <code>{id}</code>",
+        "profile.login": "🔗 <b>Логин</b>: {login}",
+        "profile.balance": "💳 <b>Баланс</b> — <code>{amount}</code> {currency}",
+        "profile.total_topup": "💵 <b>Всего пополнено</b> — <code>{amount}</code> {currency}",
+        "profile.spent": "♻️ <b>Потрачено</b>: <code>{amount}</code> {currency}",
+        "profile.purchased_count": "📦 <b>Заказов</b>: {count}",
+        "profile.referrals_count": "👥 <b>Рефералов</b>: {count}",
+        "profile.registration_date": "📅 <b>С нами с</b>: <code>{dt}</code>",
+
+        # === Referral ===
+        "referral.title": "💚 Реферальная система",
+        "referral.link": "🔗 Ссылка: https://t.me/{bot_username}?start={user_id}",
+        "referral.count": "Количество рефералов: {count}",
+        "referral.description": (
+            "📔 Реферальная система позволит Вам заработать деньги без всяких вложений. "
+            "Необходимо всего лишь распространять свою реферальную ссылку и Вы будете получать "
+            "{percent}% от суммы пополнений Ваших рефералов на Ваш баланс бота."
+        ),
+        "btn.view_referrals": "👥 Мои рефералы",
+        "btn.view_earnings": "💰 Мои поступления",
+        "btn.back_to_referral": "⬅️ К реферальной системе",
+
+        "referrals.list.title": "👥 Ваши рефералы:",
+        "referrals.list.empty": "У вас пока нет активных рефералов",
+        "referrals.item.format": "ID: {telegram_id} | Принёс: {total_earned} {currency}",
+
+        "referral.earnings.title": "💰 Поступления от реферала <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>):",
+        "referral.earnings.empty": "От данного реферала <code>{id}</code> (<a href='tg://user?id={id}'>{name}</a>) пока не было поступлений",
+        "referral.earning.format": "{amount} {currency} | {date} | (с {original_amount} {currency})",
+        "referral.item.info": ("💰 Поступление номер: <code>{id}</code>\n"
+                               "👤 Реферал: <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>)\n"
+                               "🔢 Количество: {amount} {currency}\n"
+                               "🕘 Дата: <code>{date}</code>\n"
+                               "💵 С пополнения на {original_amount} {currency}"),
+
+        "all.earnings.title": "💰 Все ваши реферальные поступления:",
+        "all.earnings.empty": "У вас пока нет реферальных поступлений",
+        "all.earning.format": "{amount} {currency} от ID:{referral_id} | {date}",
+
+        "referrals.stats.template": (
+            "📊 Статистика реферальной системы:\n\n"
+            "👥 Активных рефералов: {active_count}\n"
+            "💰 Всего заработано: {total_earned} {currency}\n"
+            "📈 Общая сумма пополнений рефералов: {total_original} {currency}\n"
+            "🔢 Количество начислений: {earnings_count}"
+        ),
+
+        # === Admin: Main Menu ===
+        "admin.menu.main": "⛩️ Меню администратора",
+        "admin.menu.shop": "🛒 Управление магазином",
+        "admin.menu.goods": "📦 Управление позициями",
+        "admin.menu.categories": "📂 Управление категориями",
+        "admin.menu.users": "👥 Управление пользователями",
+        "admin.menu.user_search": "🔎 Поиск пользователя по ID",
+        "admin.menu.balance_topup": "💰 Пополнить баланс",
+        "admin.menu.broadcast": "📝 Рассылка",
+        "admin.menu.roles": "🛡 Управление ролями",
+        "admin.menu.rights": "Недостаточно прав",
+        "admin.bot_auth.owner_only": "⛔ Доступ к панели разрешён только владельцу бота.",
+        "admin.bot_auth.prompt": "🔐 Введите пароль администратора:",
+        "admin.bot_auth.invalid": "❌ Неверный пароль. Попробуйте ещё раз.",
+        "admin.bot_auth.locked": "⏳ Слишком много попыток. Повторите через {seconds} сек.",
+        "admin.bot_auth.unavailable": "⚠️ Пароль админ-панели не настроен. Обратитесь к разработчику.",
+        "admin.bot_auth.owner_role_missing": "⚠️ Для владельца не настроены права админ-панели.",
+
+        # === Admin: Role Management ===
+        "admin.roles.list_title": "🛡 Роли системы:",
+        "admin.roles.create": "➕ Создать роль",
+        "admin.roles.edit": "✏️ Редактировать",
+        "admin.roles.delete": "🗑 Удалить",
+        "admin.roles.detail": "🛡 <b>Роль</b>: {name}\n📋 Права: {perms}\n👥 Пользователей: {users}",
+        "admin.roles.prompt_name": "Введите название роли (макс. 64 символа):",
+        "admin.roles.name_invalid": "⚠️ Некорректное название (пустое или длиннее 64 символов).",
+        "admin.roles.name_exists": "❌ Роль с таким именем уже существует",
+        "admin.roles.select_perms": "Выберите права для роли «{name}»:",
+        "admin.roles.confirm": "✅ Подтвердить",
+        "admin.roles.created": "✅ Роль «{name}» создана",
+        "admin.roles.updated": "✅ Роль «{name}» обновлена",
+        "admin.roles.deleted": "✅ Роль удалена",
+        "admin.roles.delete_confirm": "Вы уверены, что хотите удалить роль «{name}»?",
+        "admin.roles.delete_fail": "❌ Не удалось удалить: {error}",
+        "admin.roles.perm_denied": "⚠️ Недостаточно прав для этого действия",
+        "admin.roles.assign_prompt": "Выберите роль для пользователя {id}:",
+        "admin.roles.assigned": "✅ Роль {role} назначена пользователю {name}",
+        "admin.roles.assigned_notify": "ℹ️ Вам назначена роль: {role}",
+        "admin.roles.edit_name_prompt": "Введите новое название роли (или /skip чтобы оставить текущее):",
+        "btn.admin.assign_role": "🛡 Назначить роль",
+
+        # === Admin: User Management ===
+        "admin.users.prompt_enter_id": "👤 Введите id пользователя,\nчтобы посмотреть | изменить его данные",
+        "admin.users.invalid_id": "⚠️ Введите корректный числовой ID пользователя.",
+        "admin.users.profile_unavailable": "❌ Профиль недоступен (такого пользователя никогда не существовало)",
+        "admin.users.not_found": "❌ Пользователь не найден",
+        "admin.users.cannot_change_owner": "Нельзя менять роль владельца",
+        "admin.users.referrals": "👥 <b>Рефералы пользователя</b> — {count}",
+        "admin.users.btn.view_referrals": "👥 Рефералы пользователя",
+        "admin.users.btn.view_earnings": "💰 Поступления",
+        "admin.users.role": "🎛 <b>Роль</b> — {role}",
+        "admin.users.set_admin.success": "✅ Роль присвоена пользователю {name}",
+        "admin.users.set_admin.notify": "✅ Вам присвоена роль АДМИНИСТРАТОРА бота",
+        "admin.users.remove_admin.success": "✅ Роль отозвана у пользователя {name}",
+        "admin.users.remove_admin.notify": "❌ У вас отозвана роль АДМИНИСТРАТОРА бота",
+        "admin.users.balance.topped": "✅ Баланс пользователя {name} пополнен на {amount} {currency}",
+        "admin.users.balance.topped.notify": "✅ Ваш баланс пополнен на {amount} {currency}",
+        "admin.users.balance.deducted": "✅ С баланса пользователя {name} списано {amount} {currency}",
+        "admin.users.balance.deducted.notify": "ℹ️ С вашего баланса списано {amount} {currency}",
+        "admin.users.balance.insufficient": "❌ Недостаточно средств. Текущий баланс: {balance} {currency}",
+        "admin.users.balance.topup.prompt_id": "💰 Введите Telegram ID пользователя, которому нужно пополнить баланс:",
+        "admin.users.balance.topup.current": (
+            "👤 Пользователь: <code>{id}</code>\n"
+            "💳 Текущий баланс: <b>{balance}</b> {currency}\n\n"
+            "Введите сумму пополнения:"
+        ),
+        "admin.users.balance.topup.result": (
+            "✅ Баланс пополнен\n"
+            "👤 ID: <code>{id}</code>\n"
+            "💳 Было: <b>{before}</b> {currency}\n"
+            "➕ Зачислено: <b>{amount}</b> {currency}\n"
+            "💰 Стало: <b>{after}</b> {currency}"
+        ),
+        "admin.users.blocked.success": "🚫 Пользователь {name} заблокирован",
+        "admin.users.unblocked.success": "✅ Пользователь {name} разблокирован",
+        "admin.users.cannot_block_owner": "❌ Невозможно заблокировать владельца",
+        "admin.users.status.blocked": "🚫 <b>Статус</b> — Заблокирован",
+
+        # === Admin: Shop Management Menu ===
+        "admin.shop.menu.title": "⛩️ Меню управления магазином",
+        "admin.shop.menu.statistics": "📊 Статистика",
+        "admin.shop.menu.logs": "📁 Показать логи",
+        "admin.shop.menu.users": "👤 Пользователи",
+        "admin.shop.menu.search_bought": "🔎 Поиск купленного товара",
+
+        # === Admin: Categories Management ===
+        "admin.categories.menu.title": "⛩️ Меню управления категориями",
+        "admin.categories.add": "➕ Добавить категорию",
+        "admin.categories.rename": "✏️ Переименовать категорию",
+        "admin.categories.delete": "🗑 Удалить категорию",
+        "admin.categories.prompt.add": "Введите название новой категории:",
+        "admin.categories.prompt.delete": "Введите название категории для удаления:",
+        "admin.categories.prompt.rename.old": "Введите текущее название категории, которую нужно переименовать:",
+        "admin.categories.prompt.rename.new": "Введите новое имя для категории:",
+        "admin.categories.add.exist": "❌ Категория не создана (такая уже существует)",
+        "admin.categories.add.success": "✅ Категория создана",
+        "admin.categories.delete.not_found": "❌ Категория не удалена (такой категории не существует)",
+        "admin.categories.delete.success": "✅ Категория удалена",
+        "admin.categories.rename.not_found": "❌ Категория не может быть обновлена (такой категории не существует)",
+        "admin.categories.rename.exist": "❌ Переименование невозможно (категория с таким именем уже существует)",
+        "admin.categories.rename.success": "✅ Категория \"{old}\" переименована в \"{new}\"",
+
+        # === Admin: Goods / Items Management (Add / List / Item Info) ===
+        "admin.goods.add_position": "➕ Добавить позицию",
+        "admin.goods.add_item": "➕ Добавить товар в позицию",
+        "admin.goods.update_position": "📝 Изменить позицию",
+        "admin.goods.delete_position": "❌ Удалить позицию",
+        "admin.goods.show_items": "📄 Показать товары в позиции",
+        "admin.goods.add.prompt.name": "Введите название позиции",
+        "admin.goods.add.name.exists": "❌ Позиция не может быть создана (такая позиция уже существует)",
+        "admin.goods.add.name.invalid": "⚠️ Недопустимое название (1–100 символов, без управляющих символов).",
+        "admin.goods.add.prompt.description": "Введите описание для позиции:",
+        "admin.goods.add.prompt.price": "Введите цену для позиции (число в {currency}):",
+        "admin.goods.add.price.invalid": "⚠️ Некорректное значение цены. Введите число.",
+        "admin.goods.add.prompt.category": "Введите категорию, к которой будет относиться позиция:",
+        "admin.goods.add.category.not_found": "❌ Позиция не может быть создана (категория для привязки введена неверно)",
+        "admin.goods.add.infinity.question": "У этой позиции будут бесконечные товары? (всем будет высылаться одна копия значения)",
+        "admin.goods.add.values.prompt_multi": (
+            "Введите товары для позиции по одному сообщению.\n"
+            "Когда закончите ввод — нажмите «Добавить указанные товары»."
+        ),
+        "admin.goods.add.values.added": "✅ Товар «{value}» добавлен в список ({count} шт.)",
+        "admin.goods.add.result.created": "✅ Позиция создана.",
+        "admin.goods.add.created_bare": "✅ Позиция «{name}» создана без товаров.\n\nНаполните её через «{stock_button}».",
+        "admin.goods.add.result.added": "📦 Добавлено товаров: <b>{n}</b>",
+        "admin.goods.add.result.skipped_db_dup": "↩️ Пропущено (уже были в БД): <b>{n}</b>",
+        "admin.goods.add.result.skipped_batch_dup": "🔁 Пропущено (дубль в вводе): <b>{n}</b>",
+        "admin.goods.add.result.skipped_invalid": "🚫 Пропущено (пустые/некорректные): <b>{n}</b>",
+        "admin.goods.add.single.prompt_value": "Введите одно значение товара для позиции:",
+        "admin.goods.add.single.empty": "⚠️ Значение не может быть пустым.",
+        "admin.goods.add.single.created": "✅ Позиция создана, значение добавлено",
+        "btn.add_values_finish": "Добавить указанные товары",
+        "admin.goods.position.not_found": "❌ Товаров нет (Такой позиции не существует)",
+        "admin.goods.list_in_position.empty": "ℹ️ В этой позиции пока нет товаров.",
+        "admin.goods.list_in_position.title": "Товары в позиции:",
+        "admin.goods.item.invalid": "Некорректные данные",
+        "admin.goods.item.invalid_id": "Некорректный ID товара",
+        "admin.goods.item.not_found": "Товар не найден",
+        "admin.goods.prompt.enter_item_name": "Введите название позиции",
+        "admin.goods.menu.title": "⛩️ Меню управления позициями",
+
+        # === Admin: Time-limited sales ===
+        "admin.goods.sale_manage": "🔥 Управление скидкой",
+        "admin.sale.prompt.name": "Введите название позиции, для которой хотите настроить скидку:",
+        "admin.sale.not_found": "❌ Позиция с таким названием не найдена.",
+        "admin.sale.current.active": "ℹ️ Текущая скидка: <b>{percent}%</b> до <b>{until}</b> (UTC).",
+        "admin.sale.current.none": "ℹ️ Сейчас на этой позиции скидки нет.",
+        "admin.sale.prompt.percent": "Введите процент скидки (1–100).\nОтправьте <b>0</b>, чтобы убрать скидку.",
+        "admin.sale.percent.invalid": "⚠️ Некорректный процент. Введите целое число от 0 до 100.",
+        "admin.sale.disabled": "✅ Скидка для позиции «{name}» отключена.",
+        "admin.sale.prompt.days": "На сколько дней установить скидку? Введите целое число (например, 3).",
+        "admin.sale.days.invalid": "⚠️ Некорректный срок. Введите целое число дней больше 0.",
+        "admin.sale.success": "✅ Скидка <b>{percent}%</b> установлена для «{name}» до <b>{until}</b> (UTC).",
+
+        # === Admin: Goods / Items Update Flow ===
+        "admin.goods.update.amount.prompt.name": "Введите название позиции",
+        "admin.goods.update.amount.choose_position": "Выберите позицию, в которую добавить товар:",
+        "admin.goods.update.amount.no_positions": "❌ Нет активных позиций для пополнения.",
+        "admin.goods.update.amount.not_exists": "❌ Товар не может быть добавлен (такой позиции не существует)",
+        "admin.goods.update.amount.infinity_forbidden": "❌ Товар не может быть добавлен (у данной позиции бесконечный товар)",
+        "admin.goods.update.values.result.title": "✅ Товары добавлены",
+        "admin.goods.update.position.invalid": "Позиция не найдена.",
+        "admin.goods.update.position.exists": "Позиция с таким именем уже существует.",
+        "admin.goods.update.prompt.name": "Введите название позиции",
+        "admin.goods.update.not_exists": "❌ Позиция не может быть изменена (такой позиции не существует)",
+        "admin.goods.update.prompt.new_name": "Введите новое имя для позиции:",
+        "admin.goods.update.prompt.description": "Введите описание для позиции:",
+        "admin.goods.update.infinity.make.question": "Вы хотите сделать товары бесконечными?",
+        "admin.goods.update.infinity.deny.question": "Вы хотите отменить бесконечные товары?",
+        "admin.goods.update.success": "✅ Позиция обновлена",
+
+        # === Admin: Goods / Items Delete Flow ===
+        "admin.goods.delete.prompt.name": "Введите название позиции",
+        "admin.goods.delete.position.not_found": "❌ Позиция не удалена (Такой позиции не существует)",
+        "admin.goods.delete.position.success": "✅ Позиция удалена",
+        "admin.goods.item.delete.button": "❌ Удалить товар",
+        "admin.goods.item.already_deleted_or_missing": "Товар уже удалён или не найден",
+        "admin.goods.item.deleted": "✅ Товар удалён",
+
+        # === Admin: Item Info ===
+        "admin.goods.item.info.position": "<b>Позиция</b>: <code>{name}</code>",
+        "admin.goods.item.info.price": "<b>Цена</b>: <code>{price}</code> {currency}",
+        "admin.goods.item.info.id": "<b>Уникальный ID</b>: <code>{id}</code>",
+        "admin.goods.item.info.value": "<b>Товар</b>: <code>{value}</code>",
+
+        # === Admin: Logs ===
+        "admin.shop.logs.caption": "Логи бота",
+        "admin.shop.logs.empty": "❗️ Логов пока нет",
+        "admin.shop.logs.too_large": "⚠️ Логи слишком велики для отправки ({files}) — забирайте их с диска.",
+
+        # === Group Notifications ===
+        "shop.group.new_upload": "Залив",
+        "shop.group.item": "Товар",
+        "shop.group.count": "Количество",
+
+        # === Admin: Statistics ===
+        "admin.shop.stats.template": (
+            "Статистика магазина:\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "<b>◽ПОЛЬЗОВАТЕЛИ</b>\n"
+            "◾️Новых за 24 часа: {today_users}\n"
+            "◾️Всего: {users}\n"
+            "◾️Покупателей: {buyers}\n"
+            "◾️Заблокировано: {blocked}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>СРЕДСТВА</b>\n"
+            "◾Продаж за 24 часа: {today_orders} {currency} ({today_sold_count} шт.)\n"
+            "◾Продано всего на: {all_orders} {currency}\n"
+            "◾Средний чек: {avg_order} {currency}\n"
+            "◾Пополнений за 24 часа: {today_topups} {currency}\n"
+            "◾Средств в системе: {system_balance} {currency}\n"
+            "◾Пополнено всего: {all_topups} {currency}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>КАТАЛОГ</b>\n"
+            "◾В наличии: {items} шт.\n"
+            "◾Позиций: {goods} шт.\n"
+            "◾Категорий: {categories} шт.\n"
+            "◾Продано: {sold_count} шт."
+        ),
+        "admin.shop.stats.roles_header": "\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n◽<b>РОЛИ</b>",
+
+        # === Admin: Lists & Broadcast ===
+        "admin.shop.users.title": "Пользователи бота:",
+        "admin.shop.bought.prompt_id": "Введите уникальный ID купленного товара",
+        "admin.shop.bought.not_found": "❌ Товар с указанным уникальным ID не найден",
+        "broadcast.prompt": "Отправьте сообщение для рассылки:",
+        "broadcast.creating": "📤 Начинаем рассылку...\n👥 Всего пользователей: {ids}",
+        "broadcast.progress": (
+            "📤 Рассылка в процессе...\n\n"
+            "📊 Прогресс: {progress:.1f}%\n"
+            "✅ Отправлено: {sent}/{total}\n"
+            "❌ Ошибок: {failed}\n"
+            "⏱ Прошло времени: {time} сек"),
+        "broadcast.done": (
+            "✅ Рассылка завершена!\n\n"
+            "📊 Статистика:\n"
+            "👥 Всего: {total}\n"
+            "✅ Доставлено: {sent}\n"
+            "❌ Не доставлено: {failed}\n"
+            "🚫 Заблокировали бота: {blocked}\n"
+            "📈 Успешность: {success}%\n"
+            "⏱ Время: {duration} сек"
+        ),
+        "broadcast.cancel": "❌ Рассылка отменена",
+        "broadcast.warning": "Нет активной рассылки",
+        "broadcast.already_running": "⏳ Рассылка уже выполняется. Дождитесь её завершения.",
+        "broadcast.btn.cancel": "🛑 Отменить рассылку",
+
+        # === Payments / Top-up Flow ===
+        "payments.replenish_prompt": "Введите сумму пополнения в {currency}:",
+        "payments.replenish_invalid": "❌ Неверная сумма. Введите число от {min_amount} до {max_amount} {currency}.",
+        "payments.deduct_prompt": "Введите сумму списания в {currency}:",
+        "payments.deduct_invalid": "❌ Неверная сумма. Введите число от {min_amount} до {max_amount} {currency}.",
+        "payments.method_choose": "Выберите способ оплаты:",
+        "payments.not_configured": "❌ Пополнение не настроено",
+        "payments.stars.unavailable": "⭐ Оплата Telegram Stars временно недоступна. Выберите другой способ.",
+        "payments.sbp_card.stub": (
+            "🏦 <b>СБП / карта</b>\n\n"
+            "Этот способ пока находится в разработке. Мы добавим его после выбора и подключения платёжного провайдера.\n\n"
+            "Пока можно пополнить баланс через CryptoBot или администратора."
+        ),
+        "payments.platega.setup": "🏦 Оплата по СБП временно недоступна. Попробуйте позже.",
+        "payments.platega.currency_unavailable": "Оплата по СБП доступна только для платежей в RUB.",
+        "payments.platega.create_fail": "Не удалось создать ссылку на оплату. Попробуйте позже.",
+        "payments.platega.check_fail": "Не удалось проверить платёж. Попробуйте позже.",
+        "payments.platega.chargeback_alert": "⚠️ Platega сообщила о возврате платежа {id} на {amount} {currency}. Проверьте баланс пользователя {user_id}.",
+        "payments.crypto.setup": (
+            "💎 <b>Подключение CryptoBot</b>\n\n"
+            "Для автоматической оплаты нужен токен Crypto Pay API.\n\n"
+            "1. Откройте @CryptoBot и выберите Crypto Pay → My Apps.\n"
+            "2. Создайте приложение и скопируйте API-токен.\n"
+            "3. Добавьте его в файл <code>.env</code> в поле <code>CRYPTO_PAY_TOKEN</code>.\n"
+            "4. Перезапустите бота.\n\n"
+            "Токен никому не отправляйте в чат — это секретный ключ оплаты."
+        ),
+        "payments.admin.info": (
+            "👤 <b>Оплата через администратора</b>\n\n"
+            "Сумма пополнения: <b>{amount} {currency}</b>\n\n"
+            "Нажмите кнопку ниже. Откроется Telegram-чат с администратором <b>@{username}</b> и готовым сообщением:\n\n"
+            "<code>{message}</code>\n\n"
+            "Проверьте сумму и нажмите «Отправить». После подтверждения администратор вручную зачислит средства."
+        ),
+        "payments.admin.prefilled": "Привет! Нужно пополнить баланс на сумму {amount} {currency}.",
+        "payments.xrocket.setup": (
+            "🚀 <b>Подключение xRocket</b>\n\n"
+            "Нужен API-токен приложения xRocket Pay.\n\n"
+            "1. Откройте @xRocket → Pay API → создайте приложение.\n"
+            "2. В настройках приложения переключите API Version → Current.\n"
+            "3. Скопируйте 🔑 API Token и добавьте его в файл <code>.env</code> в поле <code>XROCKET_PAY_TOKEN</code>.\n"
+            "4. Перезапустите бота.\n\n"
+            "Токен никому не отправляйте в чат — это секретный ключ оплаты."
+        ),
+        "payments.xrocket.invoice": (
+            "🚀 <b>Оплата через xRocket</b>\n\n"
+            "💵 К оплате: <b>{asset_amount} {asset}</b> (≈ {fiat_amount} {currency}).\n"
+            "⌛️ У вас есть {minutes} минут на оплату.\n"
+            "<b>❗️ После оплаты нажмите кнопку «{button}»</b>"
+        ),
+        "payments.manual_crypto.info": (
+            "💱 <b>Оплата криптой напрямую</b>\n\n"
+            "Сумма пополнения: <b>{amount} {currency}</b> (≈ {usd} USD).\n\n"
+            "Переведите <b>ровно на один</b> из кошельков (минимум — эквивалент <b>0.1 USD</b>). "
+            "Сеть должна совпадать, иначе средства потеряются:\n\n"
+            "💵 USDT (BEP20 / BNB Smart Chain):\n<code>{usdt}</code>\n\n"
+            "💎 TON (The Open Network):\n<code>{ton}</code>\n\n"
+            "◎ SOL (Solana):\n<code>{sol}</code>\n\n"
+            "После перевода нажмите кнопку ниже — откроется чат с администратором <b>@{username}</b> с готовым сообщением. "
+            "Приложите туда хеш транзакции (TxHash). После 1 подтверждения сети администратор зачислит средства."
+        ),
+        "payments.manual_crypto.prefilled": (
+            "Привет! Отправил(а) крипту для пополнения на {amount} {currency}. TxHash: "
+        ),
+        "payments.session_expired": "Сессия оплаты устарела. Начните заново.",
+        "payments.crypto.create_fail": "❌ Ошибка при создании счёта: {error}",
+        "payments.crypto.api_error": "❌ Ошибка CryptoPay API: {error}",
+        "payments.crypto.check_fail": "❌ Ошибка проверки платежа: {error}",
+        "payments.stars.create_fail": "❌ Не удалось выставить счёт в Stars: {error}",
+        "payments.fiat.create_fail": "❌ Не удалось выставить счёт: {error}",
+        "payments.no_active_invoice": "❌ Активных счетов не найдено. Начните пополнение заново.",
+        "payments.invoice_not_found": "❌ Счёт не найден. Начните заново.",
+        "payments.not_paid_yet": "⌛️ Платёж ещё не оплачен.",
+        "payments.expired": "❌ Срок действия счёта истёк.",
+        "payments.invoice.summary": (
+            "💵 Сумма пополнения: {amount} {currency}.\n"
+            "⌛️ У вас есть {minutes} минут на оплату.\n"
+            "<b>❗️ После оплаты нажмите кнопку «{button}»</b>"
+        ),
+        "payments.unable_determine_amount": "❌ Не удалось определить сумму оплаты.",
+        "payments.topped_simple": "✅ Баланс пополнен на {amount} {currency}",
+        "payments.topped_with_suffix": "✅ Баланс пополнен на {amount} {currency} ({suffix})",
+        "payments.success_suffix.stars": "Telegram Stars",
+        "payments.success_suffix.tg": "Telegram Payments",
+        "payments.referral.bonus": "✅ Вы получили {amount} {currency} от вашего реферала <a href='tg://user?id={id}'>{name}</a>",
+        "payments.invoice.title.topup": "Пополнение баланса",
+        "payments.invoice.desc.topup.stars": "Пополнение на {amount} {currency} через Telegram Stars",
+        "payments.invoice.desc.topup.fiat": "Оплата через Telegram Payments (карта)",
+        "payments.invoice.label.fiat": "Пополнение на {amount} {currency}",
+        "payments.invoice.label.stars": "{stars} ⭐️",
+        "payments.already_processed": "Этот платеж уже был обработан ✅",
+        "payments.processing_error": "Ошибка при обработке платежа. Попробуйте позже.",
+        "payments.test.disabled": "❌ Тестовая оплата отключена.",
+        "payments.test.success": "🧪 Тестовый платёж принят. Баланс пополнен на {amount} {currency}.",
+
+        # === Shop Browsing (Categories / Goods / Item Page) ===
+        "shop.categories.title": (
+            "{shop_icon} <b>ТОВАРЫ</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "Выберите интересующую категорию.\n"
+            "Цена и полное описание откроются в карточке выбранного товара →"
+        ),
+        "shop.goods.choose": (
+            "{category_icon} <b>{category}</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "Выберите нужную позицию из списка ниже.\n"
+            "Цена и полное описание откроются в карточке товара."
+        ),
+        "shop.goods.button.in_stock": "{name} | {price} {currency} | {count} шт. ✅",
+        "shop.goods.button.unlimited": "{name} | {price} {currency} | в наличии ✅",
+        "shop.goods.button.out": "{name} | {price} {currency} | нет в наличии ❌",
+        "shop.goods.button.note": "{name} | {price} {currency} | {note}",
+        "shop.search.prompt": "🔍 Введите название товара или ключевое слово:",
+        "shop.search.too_short": "Запрос должен быть от 2 до 64 символов. Попробуйте ещё раз:",
+        "shop.search.results": "🔍 Результаты по запросу «{query}» — найдено: {count}",
+        "shop.search.empty": "🔍 По запросу «{query}» ничего не найдено.",
+        "shop.item.not_found": "Товар не найден",
+        "shop.item.title": "🛍 <b>{name}</b>\n━━━━━━━━━━━━━━━━",
+        "shop.item.description": "{description}",
+        "shop.item.price": "🌐 <b>Цена за 1 шт.</b>: <code>{amount} {currency}</code>",
+        "shop.item.quantity_unlimited": "🔢 <b>В наличии</b>: неограниченно",
+        "shop.item.quantity_left": "🔢 <b>В наличии</b>: <code>{count}</code> шт.",
+        "shop.item.bulk": "📦 <b>Опт</b>: от {min_qty} шт. — скидка {pct}%",
+        "shop.item.availability_note": "🔔 <b>Поступление</b>: {note}",
+        "shop.insufficient_funds": "❌ Недостаточно средств",
+        "shop.insufficient_funds.topup": (
+            "❌ <b>Недостаточно средств для покупки</b>\n\n"
+            "Пополните баланс на <b>{amount} {currency}</b>, чтобы оформить заказ.\n"
+            "Выберите способ оплаты:"
+        ),
+        "shop.out_of_stock": "❌ Товара нет в наличии",
+        "shop.purchase.success": "✅ Товар куплен. <b>Баланс</b>: <i>{balance}</i> {currency}\n\n{value}",
+        "shop.purchase.receipt": "✅ Заказ успешно оформлен!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Товар: {item_name}\n💰 Цена за 1 шт.: {price} {currency}\n📦 Кол-во: {quantity} шт.\n💡 Заказ: {unique_id}\n🕐 Время: {datetime}\n💲 Итого: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Значение:\n<code>{value}</code>",
+        "shop.purchase.processing": "⏳ Обрабатываем покупку...",
+        "shop.purchase.choose_quantity": (
+            "🛍 <b>{item_name}</b>\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "Выберите количество товара.\n\n"
+            "📦 Количество: <b>{quantity}</b> из <b>{max_quantity}</b>\n"
+            "💰 Цена за 1 шт.: <b>{unit_price} {currency}</b>\n"
+            "💵 Итого: <b>{total_price} {currency}</b>\n"
+            "💳 Ваш баланс: <b>{balance} {currency}</b>"
+        ),
+        "shop.purchase.bulk": "📦 Оптовая скидка −{pct}% (от {min_qty} шт.) уже применена.",
+        "shop.purchase.bulk_available": "📦 Оптовая скидка −{pct}% при покупке от {min_qty} шт.",
+        "shop.purchase.insufficient": (
+            "❌ <b>Недостаточно средств</b>\n\n"
+            "Товар: <b>{item_name}</b>\n"
+            "📦 Количество: <b>{quantity}</b>\n"
+            "💵 К оплате: <b>{total_price} {currency}</b>\n"
+            "💳 Ваш баланс: <b>{balance} {currency}</b>\n"
+            "➕ Нужно пополнить: <b>{missing} {currency}</b>"
+        ),
+        "shop.purchase.fail.user_not_found": "❌ Пользователь не найден в системе",
+        "shop.purchase.fail.general": "❌ Ошибка при покупке: {message}",
+
+        # === Purchases ===
+        "purchases.title": "📦 <b>Мои заказы</b>\n\nСтраница {page}/{pages}",
+        "purchases.button": "📦 #{id} | {name} | {price} {currency}",
+        "purchases.empty": "У вас пока нет заказов.",
+        "purchases.pagination.invalid": "Некорректные данные пагинации",
+        "purchases.item.not_found": "Покупка не найдена",
+        "purchases.item.name": "<b>🧾 Товар</b>: <code>{name}</code>",
+        "purchases.item.price": "<b>💵 Цена</b>: <code>{amount}</code> {currency}",
+        "purchases.item.datetime": "<b>🕒 Дата покупки</b>: <code>{dt}</code>",
+        "purchases.item.unique_id": "<b>🧾 Уникальный ID</b>: <code>{uid}</code>",
+        "purchases.item.value": "<b>🔑 Значение</b>:\n<code>{value}</code>",
+        "purchases.item.buyer": "<b>Покупатель</b>: <code>{buyer}</code>",
+
+        # === Middleware ===
+        "middleware.ban": "⏳ Вы временно заблокированы. Подождите {time} секунд",
+        "middleware.above_limits": "⚠️ Слишком много запросов! Вы временно заблокированы.",
+        "middleware.waiting": "⏳ Подождите {time} секунд перед следующим действием.",
+        "middleware.security.session_outdated": "⚠️ Сессия устарела. Пожалуйста, начните заново.",
+        "middleware.security.invalid_data": "❌ Недопустимые данные",
+        "middleware.security.blocked": "❌ Доступ заблокирован",
+        "middleware.security.not_admin": "⛔ Недостаточно прав",
+        "middleware.security.invalid_csrf": "⚠️ Сессия устарела. Пожалуйста, попробуйте снова.",
+        "maintenance.active": "🔧 Бот находится на техническом обслуживании. Пожалуйста, попробуйте позже.",
+
+        # === Admin: Maintenance ===
+        "admin.menu.maintenance_on": "🔧 Тех. работы: ВКЛ",
+        "admin.menu.maintenance_off": "🔧 Тех. работы: ВЫКЛ",
+        "admin.maintenance.enabled": "✅ Режим тех. работ включён",
+        "admin.maintenance.disabled": "✅ Режим тех. работ выключён",
+
+        # === Promo Codes ===
+        "btn.apply_promo": "🏷 Применить промокод",
+        "btn.remove_promo": "❌ Убрать промокод",
+        "admin.menu.promo": "🏷 Промокоды",
+        "admin.promo.title": "🏷 <b>Управление промокодами</b>",
+        "admin.promo.create": "➕ Создать промокод",
+        "admin.promo.list_empty": "Промокодов пока нет.",
+        "admin.promo.prompt.code": "Введите код промокода (до 50 символов):",
+        "admin.promo.prompt.type": "Выберите тип скидки:",
+        "admin.promo.type.percent": "📊 Процент (%)",
+        "admin.promo.type.fixed": "💰 Фиксированная сумма",
+        "admin.promo.prompt.value": "Введите размер скидки ({type}):",
+        "admin.promo.prompt.max_uses": "Введите макс. число использований (0 = без лимита):",
+        "admin.promo.prompt.expires": "Введите последний день действия (ГГГГ-ММ-ДД) — код работает до конца этого дня, или 0 — бессрочно:",
+        "admin.promo.prompt.binding": "Привязать к категории/товару?\n\nОтправьте:\n• Название категории\n• Название товара\n• 0 — без привязки",
+        "admin.promo.created": "✅ Промокод <code>{code}</code> создан!",
+        "admin.promo.code_exists": "❌ Промокод с таким кодом уже существует.",
+        "admin.promo.invalid_code": "❌ Код может содержать только буквы, цифры и дефис (до 50 символов).",
+        "admin.promo.deleted": "✅ Промокод удалён.",
+        "admin.promo.toggled_on": "✅ Промокод активирован.",
+        "admin.promo.toggled_off": "⛔ Промокод деактивирован.",
+        "admin.promo.btn.activate": "✅ Активировать",
+        "admin.promo.btn.deactivate": "⛔ Деактивировать",
+        "admin.promo.btn.delete": "🗑 Удалить",
+        "admin.promo.detail": "🏷 <b>Промокод</b>: <code>{code}</code>\n📊 Тип: {discount_type}\n💰 Скидка: {discount_value}\n🔗 Применим к: {binding}\n🔢 Использований: {current_uses}/{max_uses}\n📅 Истекает: {expires_at}\n✅ Активен: {is_active}",
+        "admin.promo.confirm_delete": "Удалить промокод <code>{code}</code>?",
+        "admin.promo.invalid_value": "❌ Некорректное значение. Попробуйте ещё раз.",
+        "admin.promo.invalid_date": "❌ Некорректная дата. Формат: ГГГГ-ММ-ДД",
+        "promo.not_found": "❌ Промокод не найден.",
+        "promo.zero_total": "❌ Промокод обнуляет цену. Такой заказ невозможен — обратитесь в поддержку.",
+        "promo.inactive": "❌ Промокод неактивен.",
+        "promo.expired": "❌ Промокод истёк.",
+        "promo.max_uses_reached": "❌ Промокод исчерпан.",
+        "promo.already_used": "❌ Вы уже использовали этот промокод.",
+        "promo.wrong_item": "❌ Промокод не применим к этому товару.",
+        "promo.wrong_category": "❌ Промокод не применим к этой категории.",
+        "promo.applied": "✅ Промокод <code>{code}</code> применён! Скидка: {discount}",
+        "promo.enter_code": "Введите промокод:",
+        "promo.removed": "Промокод убран.",
+        "promo.not_balance_type": "❌ Этот промокод не является промокодом на пополнение баланса.",
+        "promo.enter_redeem_code": "Введите промокод для активации:",
+        "promo.balance_redeemed": "✅ Промокод <code>{code}</code> активирован! На баланс начислено {amount} {currency}.",
+        "shop.item.price_discounted": "💰 <b>Цена</b>: <s>{original}</s> <b>{discounted}</b> {currency} (промокод {code})",
+        "shop.item.price_sale": "🔥 <b>Цена</b>: <s>{original}</s> <b>{sale}</b> {currency} (скидка {percent}%)",
+        "admin.promo.type.balance": "💰 Пополнение баланса",
+        "admin.promo.prompt.binding_type": "Привязать промокод к категории или товару?",
+        "admin.promo.binding.category": "Категория",
+        "admin.promo.binding.item": "Товар",
+        "admin.promo.binding.none": "Без привязки",
+        "admin.promo.binding.on_category": "категория «{name}»",
+        "admin.promo.binding.on_item": "товар «{name}»",
+        "admin.promo.binding.dangling": "⚠️ привязка удалена — промокод ни к чему не применяется",
+        "admin.promo.prompt.category_name": "Введите название категории:",
+        "admin.promo.prompt.item_name": "Введите название товара:",
+        "admin.promo.category_not_found": "❌ Категория не найдена.",
+        "admin.promo.item_not_found": "❌ Товар не найден.",
+        "btn.redeem_promo": "Активировать промокод",
+        "review.disabled": "Отзывы отключены.",
+
+        # === Cart ===
+        "btn.cart": "Корзина ({count})",
+        "btn.cart_empty": "🛒 Корзина",
+        "btn.add_to_cart": "🛒 В корзину",
+        "btn.cart_checkout": "💳 Оформить заказ",
+        "btn.cart_clear": "🗑 Очистить корзину",
+        "btn.cart_remove_item": "❌ {name}",
+        "btn.cart_remove_promo": "🏷 Убрать промокод {code}",
+        "btn.cart_receipt_all": "📋 Все покупки",
+        "cart.title": "🛒 <b>Корзина</b>",
+        "cart.empty": "Корзина пуста.",
+        "cart.item": "• {name} ×{qty} — {price} {currency}",
+        "cart.item_sale": "🔥 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency}",
+        "cart.item_bulk": "📦 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} (−{pct}% опт)",
+        "cart.item_promo": "🏷 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} ({code})",
+        "cart.item_promo_invalid": "⚠️ <b>{name}</b> ×{qty} — {price} {currency}\n    промокод {code} к этому товару не применяется",
+        "cart.item_promo_elsewhere": "• {name} ×{qty} — {price} {currency}\n    промокод {code} учтён в другой позиции",
+        "cart.total": "\n💰 <b>Итого</b>: {total} {currency}",
+        "cart.added": "✅ {name} добавлен в корзину.",
+        "cart.full": "❌ Корзина переполнена (макс. 10 товаров).",
+        "cart.qty_max": "❌ Максимум {max} шт. одного товара.",
+        "cart.out_of_stock": "Товара не хватает на складе в нужном количестве. Уменьшите количество и попробуйте снова.",
+        "cart.price_changed": "Цена в корзине изменилась. Откройте корзину и подтвердите новую сумму.",
+        "cart.item_not_found": "❌ Товар не найден.",
+        "cart.removed": "✅ Товар убран из корзины.",
+        "cart.cleared": "✅ Корзина очищена.",
+        "cart.checkout_confirm": "Оформить заказ на {count} товар(ов) за {total} {currency}?",
+        "cart.checkout_success": "✅ Заказ оформлен! Куплено {count} товар(ов).\n\n💰 Остаток: {balance} {currency}",
+        "cart.checkout_receipt": "✅ Заказ оформлен!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📦 Кол-во: {count} шт.\n💲 Итого: {total} {currency}\n🕐 Время: {datetime}\n➖➖➖➖➖➖➖➖➖➖➖➖\nНажмите на товар для просмотра:",
+        "cart.checkout_fail": "❌ Не удалось оформить заказ: {reason}",
+        "cart.items_unavailable": "Некоторые товары более недоступны и были убраны из корзины.",
+
+
+        # === Stock Subscriptions ===
+        "btn.notify_stock": "🔔 Сообщить о поступлении",
+        "btn.notify_stock_off": "🔕 Не сообщать",
+        "stock.subscribed": "🔔 Сообщим, когда товар появится.",
+        "stock.unsubscribed": "🔕 Уведомление отменено.",
+        "stock.back_in_stock": "🔔 Товар <b>{name}</b> снова в наличии! Добавлено: <b>{count}</b> шт.",
+
+
+        # === Operation History ===
+        "btn.operation_history": "📋 История операций",
+        "history.title": "📋 <b>История операций</b>",
+        "history.empty": "История операций пуста.",
+        "history.topup": "💰 Пополнение: +{amount} {currency}",
+        "history.purchase": "🛒 Покупка: {amount} {currency}",
+        "history.referral": "🎲 Реферальный бонус: +{amount} {currency}",
+        "history.date": "📅 {date}",
+
+        # === Reviews ===
+        "btn.leave_review": "⭐ Оставить отзыв",
+        "btn.view_reviews": "📝 Отзывы ({count})",
+        "btn.skip_review_text": "⏭ Пропустить текст",
+        "review.prompt_rating": "Оцените товар <b>{name}</b> от 1 до 5:",
+        "review.prompt_text": "Напишите текст отзыва (до 500 символов) или нажмите «Пропустить»:",
+        "review.created": "✅ Спасибо за отзыв!",
+        "review.already_exists": "Вы уже оставили отзыв на этот товар.",
+        "review.not_purchased": "Вы не покупали этот товар.",
+        "review.avg_rating": "⭐ Рейтинг: {rating}/5 ({count} отзывов)",
+        "review.item": "⭐ {rating}/5 — {text}",
+        "review.item_no_text": "⭐ {rating}/5",
+        "review.list_title": "📝 <b>Отзывы на {name}</b>",
+        "review.list_empty": "Отзывов пока нет.",
+
+        # === Errors ===
+        "errors.not_subscribed": "Вы не подписались",
+        "errors.something_wrong": "❌ Что-то пошло не так. Попробуйте ещё раз.",
+        "errors.pagination_invalid": "Некорректные данные пагинации",
+        "errors.invalid_data": "❌ Неправильные данные",
+        "errors.id_should_be_number": "❌ ID должен быть числом.",
+        "errors.channel.telegram_not_found": "Я не могу писать в канал. Добавьте меня админом канала для заливов @{channel} с правом публиковать сообщения.",
+        "errors.channel.telegram_forbidden_error": "Канал не найден. Проверьте username канала для заливов @{channel}.",
+        "errors.channel.telegram_bad_request": "Не удалось отправить в канал для заливов: {e}",
+        "errors.general_error": "❌ Ошибка: {e}",
+        "errors.invalid_item_name": "❌ Некорректное название товара",
+        "errors.invalid_user": "❌ Некорректный пользователь",
+    },
+
+    "en": {
+        # === Common Buttons ===
+        "btn.shop": "Products",
+        "btn.search": "🔍 Search catalog",
+        "btn.rules": "Rules / Agreement",
+        "btn.profile": "Profile",
+        "btn.support": "Support",
+        "btn.language": "Language / Язык",
+        "btn.faq": "FAQ",
+        "btn.agreement": "Agreements",
+        "btn.terms": "📄 User agreement",
+        "btn.privacy": "🔒 Privacy policy",
+        "btn.orders": "Orders",
+        "btn.channel": "ℹ News channel",
+        "btn.admin_menu": "🎛 Admin panel",
+        "btn.back": "Back",
+        "btn.to_menu": "🏠 Menu",
+        "btn.main_menu": "Main menu",
+        "btn.close": "✖ Close",
+        "btn.buy": "🛒 Buy",
+        "btn.buy_balance": "💳 Buy with balance",
+        "btn.buy_bulk": "📦 Wholesale from {min_qty} (−{pct}%)",
+        "btn.pay_balance": "✅ Pay with balance",
+        "btn.topup_balance": "💰 Top up balance",
+        "btn.qty_confirm": "✅ Continue to payment",
+        "btn.yes": "✅ Yes",
+        "btn.no": "❌ No",
+        "btn.check": "🔄 Check",
+        "btn.check_subscription": "🔄 Check subscription",
+        "btn.community": "💬 Community chat",
+        "btn.continue_without_community": "Continue without joining",
+        "btn.check_payment": "🔄 Check payment",
+        "btn.pay": "💳 Pay",
+        "btn.pay.crypto": "💎 CryptoBot",
+        "btn.pay.xrocket": "🚀 xRocket",
+        "btn.pay.manual_crypto": "💱 Crypto to wallet",
+        "btn.pay.sbp_card": "🏦 SBP / CARD",
+        "btn.pay.admin": "👤 Pay via administrator",
+        "btn.pay.admin.open": "✉️ Message @{username}",
+        "btn.pay.stars": "⭐ Telegram Stars",
+        "btn.pay.tg": "💸 Telegram Payments",
+        "btn.pay.test": "🧪 Test payment",
+
+        # === Admin Buttons (user management shortcuts) ===
+        "btn.admin.view_profile": "👁 View profile",
+        "btn.admin.promote": "⬆️ Make admin",
+        "btn.admin.demote": "⬇️ Remove admin",
+        "btn.admin.replenish_user": "💸 Top up balance",
+        "btn.admin.deduct_user": "💳 Deduct from balance",
+        "btn.admin.block": "🚫 Block",
+        "btn.admin.unblock": "✅ Unblock",
+
+        # === Titles / Generic Texts ===
+        "menu.title": (
+            "👋 Hello, <a href='tg://user?id={id}'>{name}</a>!\n\n"
+            "Welcome to <b>{shop_name}</b> 🛒\n\n"
+            "Choose a category, top up your balance if needed, and place an order in a few taps."
+        ),
+        "profile.caption": "👤 <b>PROFILE</b>",
+        "legal.title": "📄 <b>Store documents</b>\n\nChoose a document to read.",
+        "faq.not_set": "❌ FAQ has not been configured yet",
+        "support.not_set": "❌ Support contact has not been configured yet",
+        "support.prefilled": "Hello! I'm from {shop_name}, I have the following problem: ",
+        "language.title": "🌐 Choose your language / Выберите язык",
+        "language.changed": "✅ Language changed",
+
+        # === Profile ===
+        "btn.replenish": "Top up your balance",
+        "btn.referral": "Referral system",
+        "btn.purchased": "🎁 Purchased goods",
+        "profile.referral_id": "👤 <b>Referral</b> — <code>{id}</code>",
+
+        # === Subscription Flow ===
+        "subscribe.prompt": "First, subscribe to the news channel",
+        "subscribe.open_channel": "Open channel",
+        "subscribe.community_required": "You also need to join the chat to use the bot.",
+        "subscribe.community_optional": (
+            "You can also join the chat. Joining is optional for you, and you can "
+            "continue without it."
+        ),
+
+        # === Profile Info Lines ===
+        "profile.id": "🆔 <b>ID</b> — <code>{id}</code>",
+        "profile.login": "🔗 <b>Login</b>: {login}",
+        "profile.balance": "💳 <b>Balance</b> — <code>{amount}</code> {currency}",
+        "profile.total_topup": "💵 <b>Total topped up</b> — <code>{amount}</code> {currency}",
+        "profile.spent": "♻️ <b>Spent</b>: <code>{amount}</code> {currency}",
+        "profile.purchased_count": "📦 <b>Orders</b>: {count}",
+        "profile.referrals_count": "👥 <b>Referrals</b>: {count}",
+        "profile.registration_date": "📅 <b>With us since</b>: <code>{dt}</code>",
+
+        # === Referral ===
+        "referral.title": "💚 Referral system",
+        "referral.link": "🔗 Link: https://t.me/{bot_username}?start={user_id}",
+        "referral.count": "Referrals count: {count}",
+        "referral.description": (
+            "📔 The referral system lets you earn without any investment. "
+            "Share your personal link and you will receive {percent}% of your referrals’ "
+            "top-ups to your bot balance."
+        ),
+        "btn.view_referrals": "👥 My referrals",
+        "btn.view_earnings": "💰 My earnings",
+        "btn.back_to_referral": "⬅️ Back to referral system",
+
+        "referrals.list.title": "👥 Your referrals:",
+        "referrals.list.empty": "You don't have any active referrals yet",
+        "referrals.item.format": "ID: {telegram_id} | Earned: {total_earned} {currency}",
+
+        "referral.earnings.title": "💰 Earnings from referral <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>):",
+        "referral.earnings.empty": "No earnings from this referral <code>{id}</code> (<a href='tg://user?id={id}'>{name}</a>) yet",
+        "referral.earning.format": "{amount} {currency} | {date} | (from {original_amount} {currency})",
+        "referral.item.info": ("💰 Earning number: <code>{id}</code>\n"
+                               "👤 Referral: <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>)\n"
+                               "🔢 Amount: {amount} {currency}\n"
+                               "🕘 Date: <code>{date}</code>\n"
+                               "💵 From a deposit to {original_amount} {currency}"),
+
+        "all.earnings.title": "💰 All your referral earnings:",
+        "all.earnings.empty": "You have no referral earnings yet",
+        "all.earning.format": "{amount} {currency} from ID:{referral_id} | {date}",
+
+        "referrals.stats.template": (
+            "📊 Referral system statistics:\n\n"
+            "👥 Active referrals: {active_count}\n"
+            "💰 Total earned: {total_earned} {currency}\n"
+            "📈 Total referrals top-ups: {total_original} {currency}\n"
+            "🔢 Number of earnings: {earnings_count}"
+        ),
+
+        # === Admin: Main Menu ===
+        "admin.menu.main": "⛩️ Admin Menu",
+        "admin.menu.shop": "🛒 Shop management",
+        "admin.menu.goods": "📦 Items management",
+        "admin.menu.categories": "📂 Categories management",
+        "admin.menu.users": "👥 Users management",
+        "admin.menu.user_search": "🔎 Search user by ID",
+        "admin.menu.balance_topup": "💰 Top up balance",
+        "admin.menu.broadcast": "📝 Broadcast",
+        "admin.menu.roles": "🛡 Role management",
+        "admin.menu.rights": "Insufficient permissions",
+        "admin.bot_auth.owner_only": "⛔ Only the bot owner can access this panel.",
+        "admin.bot_auth.prompt": "🔐 Enter the administrator password:",
+        "admin.bot_auth.invalid": "❌ Incorrect password. Try again.",
+        "admin.bot_auth.locked": "⏳ Too many attempts. Try again in {seconds} sec.",
+        "admin.bot_auth.unavailable": "⚠️ The admin panel password is not configured. Contact the developer.",
+        "admin.bot_auth.owner_role_missing": "⚠️ The owner admin permissions are not configured.",
+
+        # === Admin: Role Management ===
+        "admin.roles.list_title": "🛡 System roles:",
+        "admin.roles.create": "➕ Create role",
+        "admin.roles.edit": "✏️ Edit",
+        "admin.roles.delete": "🗑 Delete",
+        "admin.roles.detail": "🛡 <b>Role</b>: {name}\n📋 Permissions: {perms}\n👥 Users: {users}",
+        "admin.roles.prompt_name": "Enter the role name (max 64 characters):",
+        "admin.roles.name_invalid": "⚠️ Invalid name (empty or exceeds 64 characters).",
+        "admin.roles.name_exists": "❌ A role with this name already exists",
+        "admin.roles.select_perms": "Select permissions for role \"{name}\":",
+        "admin.roles.confirm": "✅ Confirm",
+        "admin.roles.created": "✅ Role \"{name}\" created",
+        "admin.roles.updated": "✅ Role \"{name}\" updated",
+        "admin.roles.deleted": "✅ Role deleted",
+        "admin.roles.delete_confirm": "Are you sure you want to delete the role \"{name}\"?",
+        "admin.roles.delete_fail": "❌ Failed to delete: {error}",
+        "admin.roles.perm_denied": "⚠️ Insufficient permissions for this action",
+        "admin.roles.assign_prompt": "Select a role for user {id}:",
+        "admin.roles.assigned": "✅ Role {role} assigned to {name}",
+        "admin.roles.assigned_notify": "ℹ️ Your role has been set to: {role}",
+        "admin.roles.edit_name_prompt": "Enter the new role name (or /skip to keep current):",
+        "btn.admin.assign_role": "🛡 Assign role",
+
+        # === Admin: User Management ===
+        "admin.users.prompt_enter_id": "👤 Enter the user ID to view / edit data",
+        "admin.users.invalid_id": "⚠️ Please enter a valid numeric user ID.",
+        "admin.users.profile_unavailable": "❌ Profile unavailable (such user never existed)",
+        "admin.users.not_found": "❌ User not found",
+        "admin.users.cannot_change_owner": "You cannot change the owner’s role",
+        "admin.users.referrals": "👥 <b>User referrals</b> — {count}",
+        "admin.users.btn.view_referrals": "👥 User's referrals",
+        "admin.users.btn.view_earnings": "💰 User's earnings",
+        "admin.users.role": "🎛 <b>Role</b> — {role}",
+        "admin.users.set_admin.success": "✅ Role assigned to {name}",
+        "admin.users.set_admin.notify": "✅ You have been granted the ADMIN role",
+        "admin.users.remove_admin.success": "✅ Admin role revoked from {name}",
+        "admin.users.remove_admin.notify": "❌ Your ADMIN role has been revoked",
+        "admin.users.balance.topped": "✅ {name}'s balance has been topped up by {amount} {currency}",
+        "admin.users.balance.topped.notify": "✅ Your balance has been topped up by {amount} {currency}",
+        "admin.users.balance.deducted": "✅ Deducted {amount} {currency} from {name}'s balance",
+        "admin.users.balance.deducted.notify": "ℹ️ {amount} {currency} has been deducted from your balance",
+        "admin.users.balance.insufficient": "❌ Insufficient funds. Current balance: {balance} {currency}",
+        "admin.users.balance.topup.prompt_id": "💰 Enter the Telegram ID of the user whose balance you want to top up:",
+        "admin.users.balance.topup.current": (
+            "👤 User: <code>{id}</code>\n"
+            "💳 Current balance: <b>{balance}</b> {currency}\n\n"
+            "Enter the top-up amount:"
+        ),
+        "admin.users.balance.topup.result": (
+            "✅ Balance topped up\n"
+            "👤 ID: <code>{id}</code>\n"
+            "💳 Before: <b>{before}</b> {currency}\n"
+            "➕ Added: <b>{amount}</b> {currency}\n"
+            "💰 After: <b>{after}</b> {currency}"
+        ),
+        "admin.users.blocked.success": "🚫 User {name} has been blocked",
+        "admin.users.unblocked.success": "✅ User {name} has been unblocked",
+        "admin.users.cannot_block_owner": "❌ Cannot block the owner",
+        "admin.users.status.blocked": "🚫 <b>Status</b> — Blocked",
+
+        # === Admin: Shop Management Menu ===
+        "admin.shop.menu.title": "⛩️ Shop management",
+        "admin.shop.menu.statistics": "📊 Statistics",
+        "admin.shop.menu.logs": "📁 Show logs",
+        "admin.shop.menu.users": "👤 Users",
+        "admin.shop.menu.search_bought": "🔎 Search purchased item",
+
+        # === Admin: Categories Management ===
+        "admin.categories.menu.title": "⛩️ Categories management",
+        "admin.categories.add": "➕ Add category",
+        "admin.categories.rename": "✏️ Rename category",
+        "admin.categories.delete": "🗑 Delete category",
+        "admin.categories.prompt.add": "Enter a new category name:",
+        "admin.categories.prompt.delete": "Enter the category name to delete:",
+        "admin.categories.prompt.rename.old": "Enter the current category name to rename:",
+        "admin.categories.prompt.rename.new": "Enter the new category name:",
+        "admin.categories.add.exist": "❌ Category not created (already exists)",
+        "admin.categories.add.success": "✅ Category created",
+        "admin.categories.delete.not_found": "❌ Category not deleted (does not exist)",
+        "admin.categories.delete.success": "✅ Category deleted",
+        "admin.categories.rename.not_found": "❌ Category cannot be updated (does not exist)",
+        "admin.categories.rename.exist": "❌ Cannot rename (a category with this name already exists)",
+        "admin.categories.rename.success": "✅ Category \"{old}\" renamed to \"{new}\"",
+
+        # === Admin: Goods / Items Management (Add / List / Item Info) ===
+        "admin.goods.add_position": "➕ add item",
+        "admin.goods.add_item": "➕ Add product to item",
+        "admin.goods.update_position": "📝 change item",
+        "admin.goods.delete_position": "❌ delete item",
+        "admin.goods.show_items": "📄 show goods in item",
+        "admin.goods.add.prompt.name": "Enter the item name",
+        "admin.goods.add.name.exists": "❌ Item cannot be created (it already exists)",
+        "admin.goods.add.name.invalid": "⚠️ Invalid name (1–100 characters, no control characters).",
+        "admin.goods.add.prompt.description": "Enter item description:",
+        "admin.goods.add.prompt.price": "Enter item price (number in {currency}):",
+        "admin.goods.add.price.invalid": "⚠️ Invalid price. Please enter a number.",
+        "admin.goods.add.prompt.category": "Enter the category the item belongs to:",
+        "admin.goods.add.category.not_found": "❌ Item cannot be created (invalid category provided)",
+        "admin.goods.add.infinity.question": "Should this item have infinite values? (everyone will receive the same value copy)",
+        "admin.goods.add.values.prompt_multi": (
+            "Send product values one per message.\n"
+            "When finished, press “Add the listed goods”."
+        ),
+        "admin.goods.add.values.added": "✅ Value “{value}” added to the list ({count} pcs).",
+        "admin.goods.add.result.created": "✅ Item has been created.",
+        "admin.goods.add.created_bare": "✅ Position “{name}” created with no stock.\n\nAdd goods via “{stock_button}”.",
+        "admin.goods.add.result.added": "📦 Added values: <b>{n}</b>",
+        "admin.goods.add.result.skipped_db_dup": "↩️ Skipped (already in DB): <b>{n}</b>",
+        "admin.goods.add.result.skipped_batch_dup": "🔁 Skipped (duplicate in input): <b>{n}</b>",
+        "admin.goods.add.result.skipped_invalid": "🚫 Skipped (empty/invalid): <b>{n}</b>",
+        "admin.goods.add.single.prompt_value": "Enter a single value for the item:",
+        "admin.goods.add.single.empty": "⚠️ Value cannot be empty.",
+        "admin.goods.add.single.created": "✅ Item created, value added",
+        "btn.add_values_finish": "Add the listed goods",
+        "admin.goods.position.not_found": "❌ No goods (this item doesn't exist)",
+        "admin.goods.list_in_position.empty": "ℹ️ There are no goods in this item yet.",
+        "admin.goods.list_in_position.title": "Goods in item:",
+        "admin.goods.item.invalid": "Invalid data",
+        "admin.goods.item.invalid_id": "Invalid item ID",
+        "admin.goods.item.not_found": "Item not found",
+        "admin.goods.prompt.enter_item_name": "Enter the item name",
+        "admin.goods.menu.title": "⛩️ Items management menu",
+
+        # === Admin: Time-limited sales ===
+        "admin.goods.sale_manage": "🔥 Manage discount",
+        "admin.sale.prompt.name": "Enter the item name you want to set a discount for:",
+        "admin.sale.not_found": "❌ No item with that name was found.",
+        "admin.sale.current.active": "ℹ️ Current discount: <b>{percent}%</b> until <b>{until}</b> (UTC).",
+        "admin.sale.current.none": "ℹ️ This item currently has no discount.",
+        "admin.sale.prompt.percent": "Enter the discount percent (1–100).\nSend <b>0</b> to remove the discount.",
+        "admin.sale.percent.invalid": "⚠️ Invalid percent. Enter an integer from 0 to 100.",
+        "admin.sale.disabled": "✅ Discount for «{name}» has been removed.",
+        "admin.sale.prompt.days": "For how many days should the discount last? Enter an integer (e.g. 3).",
+        "admin.sale.days.invalid": "⚠️ Invalid duration. Enter an integer number of days greater than 0.",
+        "admin.sale.success": "✅ Discount <b>{percent}%</b> set for «{name}» until <b>{until}</b> (UTC).",
+
+        # === Admin: Goods / Items Update Flow ===
+        "admin.goods.update.amount.prompt.name": "Enter the item name",
+        "admin.goods.update.amount.choose_position": "Choose the position to add goods to:",
+        "admin.goods.update.amount.no_positions": "❌ There are no active positions available for restocking.",
+        "admin.goods.update.amount.not_exists": "❌ Unable to add values (item does not exist)",
+        "admin.goods.update.amount.infinity_forbidden": "❌ Unable to add values (this item is infinite)",
+        "admin.goods.update.values.result.title": "✅ Values added",
+        "admin.goods.update.position.invalid": "Item not found.",
+        "admin.goods.update.position.exists": "An item with this name already exists.",
+        "admin.goods.update.prompt.name": "Enter the item name",
+        "admin.goods.update.not_exists": "❌ Item cannot be updated (does not exist)",
+        "admin.goods.update.prompt.new_name": "Enter a new item name:",
+        "admin.goods.update.prompt.description": "Enter item description:",
+        "admin.goods.update.infinity.make.question": "Do you want to make the item infinite?",
+        "admin.goods.update.infinity.deny.question": "Do you want to disable infinity?",
+        "admin.goods.update.success": "✅ Item updated",
+
+        # === Admin: Goods / Items Delete Flow ===
+        "admin.goods.delete.prompt.name": "Enter the item name",
+        "admin.goods.delete.position.not_found": "❌ item not deleted (this item doesn't exist)",
+        "admin.goods.delete.position.success": "✅ item deleted",
+        "admin.goods.item.delete.button": "❌ Delete item",
+        "admin.goods.item.already_deleted_or_missing": "Item already deleted or not found",
+        "admin.goods.item.deleted": "✅ Item deleted",
+
+        # === Admin: Item Info ===
+        "admin.goods.item.info.position": "<b>Item</b>: <code>{name}</code>",
+        "admin.goods.item.info.price": "<b>Price</b>: <code>{price}</code> {currency}",
+        "admin.goods.item.info.id": "<b>Unique ID</b>: <code>{id}</code>",
+        "admin.goods.item.info.value": "<b>Product</b>: <code>{value}</code>",
+
+        # === Admin: Logs ===
+        "admin.shop.logs.caption": "Bot logs",
+        "admin.shop.logs.empty": "❗️ No logs yet",
+        "admin.shop.logs.too_large": "⚠️ Logs are too large to send ({files}) — grab them from disk.",
+
+        # === Group Notifications ===
+        "shop.group.new_upload": "New stock",
+        "shop.group.item": "Item",
+        "shop.group.count": "Quantity",
+
+        # === Admin: Statistics ===
+        "admin.shop.stats.template": (
+            "Shop statistics:\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "<b>◽USERS</b>\n"
+            "◾️New in last 24h: {today_users}\n"
+            "◾️Total: {users}\n"
+            "◾️Buyers: {buyers}\n"
+            "◾️Blocked: {blocked}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>FUNDS</b>\n"
+            "◾Sales in last 24h: {today_orders} {currency} ({today_sold_count} pcs)\n"
+            "◾Total sold: {all_orders} {currency}\n"
+            "◾Avg order: {avg_order} {currency}\n"
+            "◾Top-ups in last 24h: {today_topups} {currency}\n"
+            "◾Funds in system: {system_balance} {currency}\n"
+            "◾Total top-ups: {all_topups} {currency}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>CATALOG</b>\n"
+            "◾In stock: {items} pcs\n"
+            "◾Positions: {goods} pcs\n"
+            "◾Categories: {categories} pcs\n"
+            "◾Sold: {sold_count} pcs"
+        ),
+        "admin.shop.stats.roles_header": "\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n◽<b>ROLES</b>",
+
+        # === Admin: Lists & Broadcast ===
+        "admin.shop.users.title": "Bot users:",
+        "admin.shop.bought.prompt_id": "Enter purchased item unique ID",
+        "admin.shop.bought.not_found": "❌ Item with given unique ID not found",
+        "broadcast.prompt": "Send a message to broadcast:",
+        "broadcast.creating": "📤 Starting the newsletter...\n👥 Total users: {ids}",
+        "broadcast.progress": (
+            "📤 Broadcasting in progress...\n\n"
+            "📊 Progress: {progress:.1f}%\n"
+            "✅ Sent: {sent}/{total}\n"
+            "❌ Errors: {failed}\n"
+            "⏱ Time elapsed: {time} sec"),
+        "broadcast.done": (
+            "✅ Broadcasting is complete! \n\n"
+            "📊 Statistics:📊\n"
+            "👥 Total: {total}\n"
+            "✅ Delivered: {sent}\n"
+            "❌ Undelivered: {failed}\n"
+            "🚫 Blocked bot: {blocked}\n"
+            "📈 Success rate: {success}%\n"
+            "⏱ Time: {duration} sec"
+        ),
+        "broadcast.cancel": "❌ The broadcast has been canceled.",
+        "broadcast.warning": "No active broadcast",
+        "broadcast.already_running": "⏳ A broadcast is already running. Wait for it to finish.",
+        "broadcast.btn.cancel": "🛑 Cancel broadcast",
+
+        # === Payments / Top-up Flow ===
+        "payments.replenish_prompt": "Enter top-up amount in {currency}:",
+        "payments.replenish_invalid": "❌ Invalid amount. Enter a number from {min_amount} to {max_amount} {currency}.",
+        "payments.deduct_prompt": "Enter deduction amount in {currency}:",
+        "payments.deduct_invalid": "❌ Invalid amount. Enter a number from {min_amount} to {max_amount} {currency}.",
+        "payments.method_choose": "Choose a payment method:",
+        "payments.not_configured": "❌ Top-ups are not configured",
+        "payments.stars.unavailable": "⭐ Telegram Stars payments are temporarily unavailable. Please choose another method.",
+        "payments.sbp_card.stub": (
+            "🏦 <b>SBP / card</b>\n\n"
+            "This method is still being prepared. We will add it after choosing and connecting a payment provider.\n\n"
+            "For now, use CryptoBot or contact the administrator."
+        ),
+        "payments.platega.setup": "🏦 SBP payments are temporarily unavailable. Please try again later.",
+        "payments.platega.currency_unavailable": "SBP payment is available only for RUB payments.",
+        "payments.platega.create_fail": "Could not create the payment link. Please try again later.",
+        "payments.platega.check_fail": "Could not check the payment. Please try again later.",
+        "payments.platega.chargeback_alert": "⚠️ Platega reported a refund for payment {id}: {amount} {currency}. Review user {user_id}'s balance.",
+        "payments.crypto.setup": (
+            "💎 <b>Connect CryptoBot</b>\n\n"
+            "Automatic payments require a Crypto Pay API token.\n\n"
+            "1. Open @CryptoBot and choose Crypto Pay → My Apps.\n"
+            "2. Create an app and copy its API token.\n"
+            "3. Add it to <code>.env</code> as <code>CRYPTO_PAY_TOKEN</code>.\n"
+            "4. Restart the bot.\n\n"
+            "Never send the token in a chat — it is your secret payment key."
+        ),
+        "payments.admin.info": (
+            "👤 <b>Pay via administrator</b>\n\n"
+            "Top-up amount: <b>{amount} {currency}</b>\n\n"
+            "Press the button below. Telegram will open a chat with <b>@{username}</b> with a prepared message:\n\n"
+            "<code>{message}</code>\n\n"
+            "Check the amount and press Send. The administrator will credit the balance manually after confirmation."
+        ),
+        "payments.admin.prefilled": "Hi! Please top up my balance by {amount} {currency}.",
+        "payments.xrocket.setup": (
+            "🚀 <b>xRocket setup</b>\n\n"
+            "An xRocket Pay app API token is required.\n\n"
+            "1. Open @xRocket → Pay API → create an app.\n"
+            "2. In the app settings switch API Version → Current.\n"
+            "3. Copy the 🔑 API Token into <code>.env</code> as <code>XROCKET_PAY_TOKEN</code>.\n"
+            "4. Restart the bot."
+        ),
+        "payments.xrocket.invoice": (
+            "🚀 <b>Pay via xRocket</b>\n\n"
+            "💵 Amount due: <b>{asset_amount} {asset}</b> (≈ {fiat_amount} {currency}).\n"
+            "⌛️ You have {minutes} minutes to pay.\n"
+            "<b>❗️ After paying, press «{button}»</b>"
+        ),
+        "payments.manual_crypto.info": (
+            "💱 <b>Pay with crypto directly</b>\n\n"
+            "Top-up amount: <b>{amount} {currency}</b> (≈ {usd} USD).\n\n"
+            "Send to <b>exactly one</b> of the wallets (minimum — <b>0.1 USD</b> equivalent). "
+            "The network must match, otherwise the funds will be lost:\n\n"
+            "💵 USDT (BEP20 / BNB Smart Chain):\n<code>{usdt}</code>\n\n"
+            "💎 TON (The Open Network):\n<code>{ton}</code>\n\n"
+            "◎ SOL (Solana):\n<code>{sol}</code>\n\n"
+            "After sending, press the button below — a chat with admin <b>@{username}</b> opens with a prepared message. "
+            "Attach your transaction hash (TxHash) there. The admin credits the balance after 1 network confirmation."
+        ),
+        "payments.manual_crypto.prefilled": (
+            "Hi! I sent crypto to top up {amount} {currency}. TxHash: "
+        ),
+        "payments.session_expired": "Payment session has expired. Please start again.",
+        "payments.crypto.create_fail": "❌ Failed to create invoice: {error}",
+        "payments.crypto.api_error": "❌ CryptoPay API error: {error}",
+        "payments.crypto.check_fail": "❌ Payment check failed: {error}",
+        "payments.stars.create_fail": "❌ Failed to issue Stars invoice: {error}",
+        "payments.fiat.create_fail": "❌ Failed to issue invoice: {error}",
+        "payments.no_active_invoice": "❌ No active invoices found. Start top-up again.",
+        "payments.invoice_not_found": "❌ Invoice not found. Please start again.",
+        "payments.not_paid_yet": "⌛️ Payment is not completed yet.",
+        "payments.expired": "❌ Invoice has expired.",
+        "payments.invoice.summary": (
+            "💵 Top-up amount: {amount} {currency}.\n"
+            "⌛️ You have {minutes} minutes to pay.\n"
+            "<b>❗️ After paying, press «{button}»</b>"
+        ),
+        "payments.unable_determine_amount": "❌ Failed to determine the paid amount.",
+        "payments.topped_simple": "✅ Balance topped up by {amount} {currency}",
+        "payments.topped_with_suffix": "✅ Balance topped up by {amount} {currency} ({suffix})",
+        "payments.success_suffix.stars": "Telegram Stars",
+        "payments.success_suffix.tg": "Telegram Payments",
+        "payments.referral.bonus": "✅ You received {amount} {currency} from your referral <a href='tg://user?id={id}'>{name}</a>",
+        "payments.invoice.title.topup": "Balance top-up",
+        "payments.invoice.desc.topup.stars": "Top-up {amount} {currency} via Telegram Stars",
+        "payments.invoice.desc.topup.fiat": "Pay via Telegram Payments (card)",
+        "payments.invoice.label.fiat": "Top-up {amount} {currency}",
+        "payments.invoice.label.stars": "{stars} ⭐️",
+        "payments.already_processed": "This payment has already been processed ✅",
+        "payments.processing_error": "Payment processing error. Please try again later.",
+        "payments.test.disabled": "❌ Test payments are disabled.",
+        "payments.test.success": "🧪 Test payment accepted. Balance credited by {amount} {currency}.",
+
+        # === Shop Browsing (Categories / Goods / Item Page) ===
+        "shop.categories.title": (
+            "{shop_icon} <b>PRODUCTS</b>\n━━━━━━━━━━━━━━━━\n\n"
+            "Choose a category. Price and details are shown on the selected product card →"
+        ),
+        "shop.search.prompt": "🔍 Enter a product name or keyword:",
+        "shop.search.too_short": "The query must be 2 to 64 characters. Try again:",
+        "shop.search.results": "🔍 Results for “{query}” — found: {count}",
+        "shop.search.empty": "🔍 Nothing found for “{query}”.",
+        "shop.goods.choose": (
+            "{category_icon} <b>{category}</b>\n━━━━━━━━━━━━━━━━\n\n"
+            "Choose a product below. Its card shows the price and full details."
+        ),
+        "shop.goods.button.in_stock": "{name} | {price} {currency} | {count} pcs ✅",
+        "shop.goods.button.unlimited": "{name} | {price} {currency} | in stock ✅",
+        "shop.goods.button.out": "{name} | {price} {currency} | out of stock ❌",
+        "shop.goods.button.note": "{name} | {price} {currency} | {note}",
+        "shop.item.not_found": "Item not found",
+        "shop.item.title": "🛍 <b>{name}</b>\n━━━━━━━━━━━━━━━━",
+        "shop.item.description": "{description}",
+        "shop.item.price": "🌐 <b>Price per item</b>: <code>{amount} {currency}</code>",
+        "shop.item.quantity_unlimited": "🔢 <b>In stock</b>: unlimited",
+        "shop.item.quantity_left": "🔢 <b>In stock</b>: <code>{count}</code> pcs",
+        "shop.item.bulk": "📦 <b>Wholesale</b>: from {min_qty} pcs — {pct}% off",
+        "shop.item.availability_note": "🔔 <b>Availability</b>: {note}",
+        "shop.insufficient_funds": "❌ Insufficient funds",
+        "shop.insufficient_funds.topup": (
+            "❌ <b>Insufficient balance for this purchase</b>\n\n"
+            "Top up <b>{amount} {currency}</b> to complete the order.\n"
+            "Choose a payment method:"
+        ),
+        "shop.out_of_stock": "❌ Item is out of stock",
+        "shop.purchase.success": "✅ Item purchased. <b>Balance</b>: <i>{balance}</i> {currency}\n\n{value}",
+        "shop.purchase.receipt": "✅ Order placed successfully!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Item: {item_name}\n💰 Price per item: {price} {currency}\n📦 Qty: {quantity}\n💡 Order: {unique_id}\n🕐 Time: {datetime}\n💲 Total: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Value:\n<code>{value}</code>",
+        "shop.purchase.processing": "⏳ Processing the purchase...",
+        "shop.purchase.choose_quantity": (
+            "🛍 <b>{item_name}</b>\n━━━━━━━━━━━━━━━━\n"
+            "Choose the quantity.\n\n"
+            "📦 Quantity: <b>{quantity}</b> of <b>{max_quantity}</b>\n"
+            "💰 Price per item: <b>{unit_price} {currency}</b>\n"
+            "💵 Total: <b>{total_price} {currency}</b>\n"
+            "💳 Your balance: <b>{balance} {currency}</b>"
+        ),
+        "shop.purchase.bulk": "📦 Wholesale discount −{pct}% (from {min_qty} pcs) already applied.",
+        "shop.purchase.bulk_available": "📦 Wholesale discount −{pct}% when buying {min_qty}+ pcs.",
+        "shop.purchase.insufficient": (
+            "❌ <b>Insufficient balance</b>\n\n"
+            "Item: <b>{item_name}</b>\n"
+            "📦 Quantity: <b>{quantity}</b>\n"
+            "💵 Total: <b>{total_price} {currency}</b>\n"
+            "💳 Your balance: <b>{balance} {currency}</b>\n"
+            "➕ Required top-up: <b>{missing} {currency}</b>"
+        ),
+        "shop.purchase.fail.user_not_found": "❌ User not found in the system",
+        "shop.purchase.fail.general": "❌ Purchase error: {message}",
+
+        # === Purchases ===
+        "purchases.title": "📦 <b>My orders</b>\n\nPage {page}/{pages}",
+        "purchases.button": "📦 #{id} | {name} | {price} {currency}",
+        "purchases.empty": "You do not have any orders yet.",
+        "purchases.pagination.invalid": "Invalid pagination data",
+        "purchases.item.not_found": "Purchase not found",
+        "purchases.item.name": "<b>🧾 Item</b>: <code>{name}</code>",
+        "purchases.item.price": "<b>💵 Price</b>: <code>{amount}</code> {currency}",
+        "purchases.item.datetime": "<b>🕒 Purchased at</b>: <code>{dt}</code>",
+        "purchases.item.unique_id": "<b>🧾 Unique ID</b>: <code>{uid}</code>",
+        "purchases.item.value": "<b>🔑 Value</b>:\n<code>{value}</code>",
+        "purchases.item.buyer": "<b>Buyer</b>: <code>{buyer}</code>",
+
+        # === Middleware ===
+        "middleware.ban": "⏳ You are temporarily blocked. Wait {time} seconds.",
+        "middleware.above_limits": "⚠️ Too many requests! You are temporarily blocked.",
+        "middleware.waiting": "⏳ Wait {time} seconds for the next action.",
+        "middleware.security.session_outdated": "⚠️ Session is outdated. Please start again.",
+        "middleware.security.invalid_data": "❌ Invalid data",
+        "middleware.security.blocked": "❌ Access blocked",
+        "middleware.security.not_admin": "⛔ Insufficient permissions",
+        "middleware.security.invalid_csrf": "⚠️ Session expired. Please try again.",
+        "maintenance.active": "🔧 The bot is under maintenance. Please try again later.",
+
+        # === Admin: Maintenance ===
+        "admin.menu.maintenance_on": "🔧 Maintenance: ON",
+        "admin.menu.maintenance_off": "🔧 Maintenance: OFF",
+        "admin.maintenance.enabled": "✅ Maintenance mode enabled",
+        "admin.maintenance.disabled": "✅ Maintenance mode disabled",
+
+        # === Promo Codes ===
+        "btn.apply_promo": "🏷 Apply promo code",
+        "btn.remove_promo": "❌ Remove promo code",
+        "admin.menu.promo": "🏷 Promo Codes",
+        "admin.promo.title": "🏷 <b>Promo Code Management</b>",
+        "admin.promo.create": "➕ Create promo code",
+        "admin.promo.list_empty": "No promo codes yet.",
+        "admin.promo.prompt.code": "Enter promo code (up to 50 characters):",
+        "admin.promo.prompt.type": "Choose discount type:",
+        "admin.promo.type.percent": "📊 Percent (%)",
+        "admin.promo.type.fixed": "💰 Fixed amount",
+        "admin.promo.prompt.value": "Enter discount value ({type}):",
+        "admin.promo.prompt.max_uses": "Enter max uses (0 = unlimited):",
+        "admin.promo.prompt.expires": "Enter the last valid day (YYYY-MM-DD) — the code works through the end of that day, or 0 for no expiry:",
+        "admin.promo.prompt.binding": "Bind to category/item?\n\nSend:\n• Category name\n• Item name\n• 0 — no binding",
+        "admin.promo.created": "✅ Promo code <code>{code}</code> created!",
+        "admin.promo.code_exists": "❌ Promo code already exists.",
+        "admin.promo.invalid_code": "❌ A code may contain only letters, digits and hyphens (up to 50 characters).",
+        "admin.promo.deleted": "✅ Promo code deleted.",
+        "admin.promo.toggled_on": "✅ Promo code activated.",
+        "admin.promo.toggled_off": "⛔ Promo code deactivated.",
+        "admin.promo.btn.activate": "✅ Activate",
+        "admin.promo.btn.deactivate": "⛔ Deactivate",
+        "admin.promo.btn.delete": "🗑 Delete",
+        "admin.promo.detail": "🏷 <b>Promo Code</b>: <code>{code}</code>\n📊 Type: {discount_type}\n💰 Discount: {discount_value}\n🔗 Applies to: {binding}\n🔢 Uses: {current_uses}/{max_uses}\n📅 Expires: {expires_at}\n✅ Active: {is_active}",
+        "admin.promo.confirm_delete": "Delete promo code <code>{code}</code>?",
+        "admin.promo.invalid_value": "❌ Invalid value. Try again.",
+        "admin.promo.invalid_date": "❌ Invalid date. Format: YYYY-MM-DD",
+        "promo.not_found": "❌ Promo code not found.",
+        "promo.zero_total": "❌ This promo zeroes the price. Such an order is not possible — contact support.",
+        "promo.inactive": "❌ Promo code is inactive.",
+        "promo.expired": "❌ Promo code has expired.",
+        "promo.max_uses_reached": "❌ Promo code uses exhausted.",
+        "promo.already_used": "❌ You already used this promo code.",
+        "promo.wrong_item": "❌ Promo code is not applicable to this item.",
+        "promo.wrong_category": "❌ Promo code is not applicable to this category.",
+        "promo.applied": "✅ Promo code <code>{code}</code> applied! Discount: {discount}",
+        "promo.enter_code": "Enter promo code:",
+        "promo.removed": "Promo code removed.",
+        "promo.not_balance_type": "❌ This promo code is not a balance top-up code.",
+        "promo.enter_redeem_code": "Enter promo code to redeem:",
+        "promo.balance_redeemed": "✅ Promo code <code>{code}</code> redeemed! {amount} {currency} added to your balance.",
+        "shop.item.price_discounted": "💰 <b>Price</b>: <s>{original}</s> <b>{discounted}</b> {currency} (promo {code})",
+        "shop.item.price_sale": "🔥 <b>Price</b>: <s>{original}</s> <b>{sale}</b> {currency} ({percent}% off)",
+        "admin.promo.type.balance": "💰 Balance top-up",
+        "admin.promo.prompt.binding_type": "Bind promo code to category or item?",
+        "admin.promo.binding.category": "Category",
+        "admin.promo.binding.item": "Item",
+        "admin.promo.binding.none": "No binding",
+        "admin.promo.binding.on_category": "category “{name}”",
+        "admin.promo.binding.on_item": "item “{name}”",
+        "admin.promo.binding.dangling": "⚠️ binding deleted — this promo applies to nothing",
+        "admin.promo.prompt.category_name": "Enter category name:",
+        "admin.promo.prompt.item_name": "Enter item name:",
+        "admin.promo.category_not_found": "❌ Category not found.",
+        "admin.promo.item_not_found": "❌ Item not found.",
+        "btn.redeem_promo": "Redeem promo code",
+        "review.disabled": "Reviews are disabled.",
+
+        # === Cart ===
+        "btn.cart": "Cart ({count})",
+        "btn.cart_empty": "🛒 Cart",
+        "btn.add_to_cart": "🛒 Add to cart",
+        "btn.cart_checkout": "💳 Checkout",
+        "btn.cart_clear": "🗑 Clear cart",
+        "btn.cart_remove_item": "❌ {name}",
+        "btn.cart_remove_promo": "🏷 Remove promo {code}",
+        "btn.cart_receipt_all": "📋 All purchases",
+        "cart.title": "🛒 <b>Cart</b>",
+        "cart.empty": "Cart is empty.",
+        "cart.item": "• {name} ×{qty} — {price} {currency}",
+        "cart.item_sale": "🔥 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency}",
+        "cart.item_bulk": "📦 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} (−{pct}% wholesale)",
+        "cart.item_promo": "🏷 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} ({code})",
+        "cart.item_promo_invalid": "⚠️ <b>{name}</b> ×{qty} — {price} {currency}\n    promo {code} does not apply to this item",
+        "cart.item_promo_elsewhere": "• {name} ×{qty} — {price} {currency}\n    promo {code} was applied to another line",
+        "cart.total": "\n💰 <b>Total</b>: {total} {currency}",
+        "cart.added": "✅ {name} added to cart.",
+        "cart.full": "❌ Cart is full (max 10 items).",
+        "cart.qty_max": "❌ Maximum {max} units of one item.",
+        "cart.out_of_stock": "Not enough stock for the requested quantity. Reduce it and try again.",
+        "cart.price_changed": "The cart total changed. Open the cart and confirm the new amount.",
+        "cart.item_not_found": "❌ Item not found.",
+        "cart.removed": "✅ Item removed from cart.",
+        "cart.cleared": "✅ Cart cleared.",
+        "cart.checkout_confirm": "Checkout {count} item(s) for {total} {currency}?",
+        "cart.checkout_success": "✅ Order placed! Bought {count} item(s).\n\n💰 Balance: {balance} {currency}",
+        "cart.checkout_receipt": "✅ Order placed!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📦 Qty: {count}\n💲 Total: {total} {currency}\n🕐 Time: {datetime}\n➖➖➖➖➖➖➖➖➖➖➖➖\nTap an item to view details:",
+        "cart.checkout_fail": "❌ Checkout failed: {reason}",
+        "cart.items_unavailable": "Some items are no longer available and were removed from cart.",
+
+
+        # === Stock Subscriptions ===
+        "btn.notify_stock": "🔔 Notify me when in stock",
+        "btn.notify_stock_off": "🔕 Cancel notification",
+        "stock.subscribed": "🔔 We'll let you know when it's back.",
+        "stock.unsubscribed": "🔕 Notification cancelled.",
+        "stock.back_in_stock": "🔔 <b>{name}</b> is back in stock! Added: <b>{count}</b> pcs.",
+
+
+        # === Operation History ===
+        "btn.operation_history": "📋 Operation History",
+        "history.title": "📋 <b>Operation History</b>",
+        "history.empty": "Operation history is empty.",
+        "history.topup": "💰 Top-up: +{amount} {currency}",
+        "history.purchase": "🛒 Purchase: {amount} {currency}",
+        "history.referral": "🎲 Referral bonus: +{amount} {currency}",
+        "history.date": "📅 {date}",
+
+        # === Reviews ===
+        "btn.leave_review": "⭐ Leave a review",
+        "btn.view_reviews": "📝 Reviews ({count})",
+        "btn.skip_review_text": "⏭ Skip text",
+        "review.prompt_rating": "Rate <b>{name}</b> from 1 to 5:",
+        "review.prompt_text": "Write a review (up to 500 chars) or click Skip:",
+        "review.created": "✅ Thank you for your review!",
+        "review.already_exists": "You already reviewed this item.",
+        "review.not_purchased": "You haven't purchased this item.",
+        "review.avg_rating": "⭐ Rating: {rating}/5 ({count} reviews)",
+        "review.item": "⭐ {rating}/5 — {text}",
+        "review.item_no_text": "⭐ {rating}/5",
+        "review.list_title": "📝 <b>Reviews for {name}</b>",
+        "review.list_empty": "No reviews yet.",
+
+        # === Errors ===
+        "errors.not_subscribed": "You are not subscribed",
+        "errors.something_wrong": "❌ Something went wrong. Please try again.",
+        "errors.pagination_invalid": "Invalid pagination data",
+        "errors.invalid_data": "❌ Invalid data",
+        "errors.id_should_be_number": "❌ ID must be a number.",
+        "errors.channel.telegram_not_found": "I can't write to the channel. Add me as a channel admin for uploads @{channel} with the right to publish messages.",
+        "errors.channel.telegram_forbidden_error": "Channel not found. Check the channel username for uploads @{channel}.",
+        "errors.channel.telegram_bad_request": "Failed to send to the channel for uploads: {e}",
+        "errors.general_error": "❌ Error: {e}",
+        "errors.invalid_item_name": "❌ Invalid item name",
+        "errors.invalid_user": "❌ Invalid user",
+    },
+    "vi": {
+        # === Common Buttons ===
+        "btn.shop": "Sản phẩm",
+        "btn.search": "🔍 Tìm kiếm sản phẩm",
+        "btn.rules": "Nội quy / Thỏa thuận",
+        "btn.profile": "Hồ sơ",
+        "btn.support": "Hỗ trợ",
+        "btn.language": "Language / Ngôn ngữ",
+        "btn.faq": "FAQ",
+        "btn.agreement": "Điều khoản",
+        "btn.terms": "📄 Thỏa thuận người dùng",
+        "btn.privacy": "🔒 Chính sách riêng tư",
+        "btn.orders": "Đơn hàng",
+        "btn.channel": "ℹ Kênh tin tức",
+        "btn.admin_menu": "🎛 Bảng quản trị",
+        "btn.back": "Quay lại",
+        "btn.to_menu": "🏠 Về menu",
+        "btn.main_menu": "Menu chính",
+        "btn.close": "✖ Đóng",
+        "btn.buy": "🛒 Mua",
+        "btn.buy_balance": "💳 Mua bằng số dư",
+        "btn.buy_bulk": "📦 Sỉ từ {min_qty} (−{pct}%)",
+        "btn.pay_balance": "✅ Thanh toán bằng số dư",
+        "btn.topup_balance": "💰 Nạp tiền",
+        "btn.qty_confirm": "✅ Đến thanh toán",
+        "btn.yes": "✅ Có",
+        "btn.no": "❌ Không",
+        "btn.check": "🔄 Kiểm tra",
+        "btn.check_subscription": "🔄 Kiểm tra đăng ký",
+        "btn.community": "💬 Nhóm cộng đồng",
+        "btn.continue_without_community": "Tiếp tục mà không tham gia",
+        "btn.pay": "💳 Thanh toán",
+        "btn.check_payment": "🔄 Kiểm tra thanh toán",
+        "btn.pay.crypto": "💎 CryptoBot",
+        "btn.pay.xrocket": "🚀 xRocket",
+        "btn.pay.manual_crypto": "💱 Crypto tới ví",
+        "btn.pay.sbp_card": "🏦 SBP / THẺ",
+        "btn.pay.admin": "👤 Thanh toán qua quản trị viên",
+        "btn.pay.admin.open": "✉️ Nhắn cho @{username}",
+        "btn.pay.stars": "⭐ Telegram Stars",
+        "btn.pay.tg": "💸 Telegram Payments",
+        "btn.pay.test": "🧪 Thanh toán thử",
+
+        # === Admin Buttons (user management shortcuts) ===
+        "btn.admin.view_profile": "👁 Xem hồ sơ",
+        "btn.admin.promote": "⬆️ Đặt làm quản trị viên",
+        "btn.admin.demote": "⬇️ Gỡ quản trị viên",
+        "btn.admin.replenish_user": "💸 Nạp tiền",
+        "btn.admin.deduct_user": "💳 Trừ tiền",
+        "btn.admin.block": "🚫 Chặn",
+        "btn.admin.unblock": "✅ Bỏ chặn",
+
+        # === Titles / Generic Texts ===
+        "menu.title": (
+            "👋 Xin chào, <a href='tg://user?id={id}'>{name}</a>!\n\n"
+            "Chào mừng bạn đến với cửa hàng <b>{shop_name}</b> 🛒\n\n"
+            "Chọn danh mục bạn cần, nạp tiền nếu cần "
+            "và đặt hàng chỉ với vài thao tác."
+        ),
+        "profile.caption": "👤 <b>HỒ SƠ</b>",
+        "legal.title": "📄 <b>Tài liệu cửa hàng</b>\n\nChọn tài liệu bạn muốn đọc.",
+        "faq.not_set": "❌ Chưa có FAQ",
+        "support.not_set": "❌ Chưa có liên hệ hỗ trợ",
+        "support.prefilled": "Xin chào! Tôi nhắn từ {shop_name}, tôi gặp vấn đề sau: ",
+        "language.title": "🌐 Chọn ngôn ngữ / Choose your language",
+        "language.changed": "✅ Đã đổi ngôn ngữ",
+
+        # === Subscription Flow ===
+        "subscribe.prompt": "Để bắt đầu, hãy đăng ký kênh tin tức",
+        "subscribe.open_channel": "Mở kênh",
+        "subscribe.community_required": "Để sử dụng bot, bạn cũng cần tham gia nhóm chat.",
+        "subscribe.community_optional": (
+            "Bạn cũng có thể tham gia nhóm chat. Việc tham gia là tùy chọn; bạn vẫn "
+            "có thể tiếp tục mà không cần vào nhóm."
+        ),
+
+        # === Profile ===
+        "profile.referral_id": "👤 <b>Giới thiệu</b> — <code>{id}</code>",
+        "btn.replenish": "Nạp tiền",
+        "btn.referral": "Hệ thống giới thiệu",
+        "btn.purchased": "🎁 Sản phẩm đã mua",
+
+        # === Profile Info Lines ===
+        "profile.id": "🆔 <b>ID</b> — <code>{id}</code>",
+        "profile.login": "🔗 <b>Tên đăng nhập</b>: {login}",
+        "profile.balance": "💳 <b>Số dư</b> — <code>{amount}</code> {currency}",
+        "profile.total_topup": "💵 <b>Đã nạp tổng</b> — <code>{amount}</code> {currency}",
+        "profile.spent": "♻️ <b>Đã chi</b>: <code>{amount}</code> {currency}",
+        "profile.purchased_count": "📦 <b>Đơn hàng</b>: {count}",
+        "profile.referrals_count": "👥 <b>Lượt giới thiệu</b>: {count}",
+        "profile.registration_date": "📅 <b>Tham gia từ</b>: <code>{dt}</code>",
+        # === Referral ===
+        "referral.title": "💚 Hệ thống giới thiệu",
+        "referral.link": "🔗 Liên kết: https://t.me/{bot_username}?start={user_id}",
+        "referral.count": "Số lượt giới thiệu: {count}",
+        "referral.description": (
+            "📔 Hệ thống giới thiệu giúp bạn kiếm tiền mà không cần vốn. "
+            "Chỉ cần chia sẻ liên kết giới thiệu, bạn sẽ nhận "
+            "{percent}% từ mỗi lần nạp tiền của người được giới thiệu vào số dư bot của mình."
+        ),
+        "btn.view_referrals": "👥 Người tôi đã giới thiệu",
+        "btn.view_earnings": "💰 Thu nhập của tôi",
+        "btn.back_to_referral": "⬅️ Về hệ thống giới thiệu",
+
+        "referrals.list.title": "👥 Người bạn đã giới thiệu:",
+        "referrals.list.empty": "Bạn chưa có lượt giới thiệu nào",
+        "referrals.item.format": "ID: {telegram_id} | Mang lại: {total_earned} {currency}",
+
+        "referral.earnings.title": "💰 Thu nhập từ người được giới thiệu <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>):",
+        "referral.earnings.empty": "Người được giới thiệu <code>{id}</code> (<a href='tg://user?id={id}'>{name}</a>) chưa mang lại thu nhập nào",
+        "referral.earning.format": "{amount} {currency} | {date} | (từ {original_amount} {currency})",
+        "referral.item.info": ("💰 Khoản thu số: <code>{id}</code>\n"
+                               "👤 Người giới thiệu: <code>{telegram_id}</code> (<a href='tg://user?id={telegram_id}'>{name}</a>)\n"
+                               "🔢 Số tiền: {amount} {currency}\n"
+                               "🕘 Ngày: <code>{date}</code>\n"
+                               "💵 Từ lần nạp {original_amount} {currency}"),
+
+        "all.earnings.title": "💰 Toàn bộ thu nhập giới thiệu của bạn:",
+        "all.earnings.empty": "Bạn chưa có thu nhập giới thiệu nào",
+        "all.earning.format": "{amount} {currency} từ ID:{referral_id} | {date}",
+
+        "referrals.stats.template": (
+            "📊 Thống kê hệ thống giới thiệu:\n\n"
+            "👥 Lượt giới thiệu đang hoạt động: {active_count}\n"
+            "💰 Tổng đã kiếm: {total_earned} {currency}\n"
+            "📈 Tổng tiền nạp của người được giới thiệu: {total_original} {currency}\n"
+            "🔢 Số lần cộng tiền: {earnings_count}"
+        ),
+
+        # === Admin: Main Menu ===
+        "admin.menu.main": "⛩️ Menu quản trị viên",
+        "admin.menu.shop": "🛒 Quản lý cửa hàng",
+        "admin.menu.goods": "📦 Quản lý sản phẩm",
+        "admin.menu.categories": "📂 Quản lý danh mục",
+        "admin.menu.users": "👥 Quản lý người dùng",
+        "admin.menu.user_search": "🔎 Tìm người dùng theo ID",
+        "admin.menu.balance_topup": "💰 Nạp số dư",
+        "admin.menu.broadcast": "📝 Gửi tin hàng loạt",
+        "admin.menu.roles": "🛡 Quản lý vai trò",
+        "admin.menu.rights": "Không đủ quyền",
+        "admin.bot_auth.owner_only": "⛔ Chỉ chủ sở hữu bot mới có thể truy cập bảng điều khiển này.",
+        "admin.bot_auth.prompt": "🔐 Nhập mật khẩu quản trị viên:",
+        "admin.bot_auth.invalid": "❌ Mật khẩu không đúng. Hãy thử lại.",
+        "admin.bot_auth.locked": "⏳ Quá nhiều lần thử. Hãy thử lại sau {seconds} giây.",
+        "admin.bot_auth.unavailable": "⚠️ Chưa cấu hình mật khẩu bảng quản trị. Hãy liên hệ nhà phát triển.",
+        "admin.bot_auth.owner_role_missing": "⚠️ Chưa cấu hình quyền quản trị cho chủ sở hữu.",
+
+        # === Admin: Role Management ===
+        "admin.roles.list_title": "🛡 Các vai trò trong hệ thống:",
+        "admin.roles.create": "➕ Tạo vai trò",
+        "admin.roles.edit": "✏️ Sửa",
+        "admin.roles.delete": "🗑 Xóa",
+        "admin.roles.detail": "🛡 <b>Vai trò</b>: {name}\n📋 Quyền: {perms}\n👥 Người dùng: {users}",
+        "admin.roles.prompt_name": "Nhập tên vai trò (tối đa 64 ký tự):",
+        "admin.roles.name_invalid": "⚠️ Tên không hợp lệ (trống hoặc dài quá 64 ký tự).",
+        "admin.roles.name_exists": "❌ Tên vai trò này đã tồn tại",
+        "admin.roles.select_perms": "Chọn quyền cho vai trò «{name}»:",
+        "admin.roles.confirm": "✅ Xác nhận",
+        "admin.roles.created": "✅ Đã tạo vai trò «{name}»",
+        "admin.roles.updated": "✅ Đã cập nhật vai trò «{name}»",
+        "admin.roles.deleted": "✅ Đã xóa vai trò",
+        "admin.roles.delete_confirm": "Bạn có chắc muốn xóa vai trò «{name}»?",
+        "admin.roles.delete_fail": "❌ Không thể xóa: {error}",
+        "admin.roles.perm_denied": "⚠️ Không đủ quyền cho thao tác này",
+        "admin.roles.assign_prompt": "Chọn vai trò cho người dùng {id}:",
+        "admin.roles.assigned": "✅ Đã gán vai trò {role} cho người dùng {name}",
+        "admin.roles.assigned_notify": "ℹ️ Bạn được gán vai trò: {role}",
+        "admin.roles.edit_name_prompt": "Nhập tên mới cho vai trò (hoặc /skip để giữ nguyên):",
+        "btn.admin.assign_role": "🛡 Gán vai trò",
+
+        # === Admin: User Management ===
+        "admin.users.prompt_enter_id": "👤 Nhập id người dùng,\nđể xem | chỉnh sửa thông tin",
+        "admin.users.invalid_id": "⚠️ Hãy nhập ID người dùng dạng số hợp lệ.",
+        "admin.users.profile_unavailable": "❌ Không xem được hồ sơ (người dùng này chưa từng tồn tại)",
+        "admin.users.not_found": "❌ Không tìm thấy người dùng",
+        "admin.users.cannot_change_owner": "Không thể đổi vai trò của chủ sở hữu",
+        "admin.users.referrals": "👥 <b>Lượt giới thiệu của người dùng</b> — {count}",
+        "admin.users.btn.view_referrals": "👥 Lượt giới thiệu của người dùng",
+        "admin.users.btn.view_earnings": "💰 Thu nhập",
+        "admin.users.role": "🎛 <b>Vai trò</b> — {role}",
+        "admin.users.set_admin.success": "✅ Đã gán vai trò cho người dùng {name}",
+        "admin.users.set_admin.notify": "✅ Bạn được gán vai trò QUẢN TRỊ VIÊN bot",
+        "admin.users.remove_admin.success": "✅ Đã thu hồi vai trò của người dùng {name}",
+        "admin.users.remove_admin.notify": "❌ Vai trò QUẢN TRỊ VIÊN bot của bạn đã bị thu hồi",
+        "admin.users.balance.topped": "✅ Đã nạp {amount} {currency} vào số dư của người dùng {name}",
+        "admin.users.balance.topped.notify": "✅ Số dư của bạn đã được nạp {amount} {currency}",
+        "admin.users.balance.deducted": "✅ Đã trừ {amount} {currency} khỏi số dư của người dùng {name}",
+        "admin.users.balance.deducted.notify": "ℹ️ Số dư của bạn đã bị trừ {amount} {currency}",
+        "admin.users.balance.insufficient": "❌ Số dư không đủ. Số dư hiện tại: {balance} {currency}",
+        "admin.users.balance.topup.prompt_id": "💰 Nhập ID Telegram của người dùng cần nạp số dư:",
+        "admin.users.balance.topup.current": (
+            "👤 Người dùng: <code>{id}</code>\n"
+            "💳 Số dư hiện tại: <b>{balance}</b> {currency}\n\n"
+            "Nhập số tiền cần nạp:"
+        ),
+        "admin.users.balance.topup.result": (
+            "✅ Đã nạp số dư\n"
+            "👤 ID: <code>{id}</code>\n"
+            "💳 Trước: <b>{before}</b> {currency}\n"
+            "➕ Đã nạp: <b>{amount}</b> {currency}\n"
+            "💰 Sau: <b>{after}</b> {currency}"
+        ),
+        "admin.users.blocked.success": "🚫 Đã chặn người dùng {name}",
+        "admin.users.unblocked.success": "✅ Đã bỏ chặn người dùng {name}",
+        "admin.users.cannot_block_owner": "❌ Không thể chặn chủ sở hữu",
+        "admin.users.status.blocked": "🚫 <b>Trạng thái</b> — Đã bị chặn",
+
+        # === Admin: Shop Management Menu ===
+        "admin.shop.menu.title": "⛩️ Menu quản lý cửa hàng",
+        "admin.shop.menu.statistics": "📊 Thống kê",
+        "admin.shop.menu.logs": "📁 Xem nhật ký",
+        "admin.shop.menu.users": "👤 Người dùng",
+        "admin.shop.menu.search_bought": "🔎 Tìm sản phẩm đã mua",
+
+        # === Admin: Categories Management ===
+        "admin.categories.menu.title": "⛩️ Menu quản lý danh mục",
+        "admin.categories.add": "➕ Thêm danh mục",
+        "admin.categories.rename": "✏️ Đổi tên danh mục",
+        "admin.categories.delete": "🗑 Xóa danh mục",
+        "admin.categories.prompt.add": "Nhập tên danh mục mới:",
+        "admin.categories.prompt.delete": "Nhập tên danh mục cần xóa:",
+        "admin.categories.prompt.rename.old": "Nhập tên hiện tại của danh mục cần đổi tên:",
+        "admin.categories.prompt.rename.new": "Nhập tên mới cho danh mục:",
+        "admin.categories.add.exist": "❌ Không tạo danh mục (đã tồn tại)",
+        "admin.categories.add.success": "✅ Đã tạo danh mục",
+        "admin.categories.delete.not_found": "❌ Không xóa danh mục (danh mục không tồn tại)",
+        "admin.categories.delete.success": "✅ Đã xóa danh mục",
+        "admin.categories.rename.not_found": "❌ Không thể cập nhật danh mục (danh mục không tồn tại)",
+        "admin.categories.rename.exist": "❌ Không thể đổi tên (đã có danh mục tên này)",
+        "admin.categories.rename.success": "✅ Đã đổi tên danh mục «{old}» thành «{new}»",
+
+        # === Admin: Goods / Items Management (Add / List / Item Info) ===
+        "admin.goods.add_position": "➕ Thêm sản phẩm",
+        "admin.goods.add_item": "➕ Thêm mặt hàng vào sản phẩm",
+        "admin.goods.update_position": "📝 Sửa sản phẩm",
+        "admin.goods.delete_position": "❌ Xóa sản phẩm",
+        "admin.goods.show_items": "📄 Xem các mặt hàng trong sản phẩm",
+        "admin.goods.add.prompt.name": "Nhập tên sản phẩm",
+        "admin.goods.add.name.exists": "❌ Không thể tạo sản phẩm (sản phẩm này đã tồn tại)",
+        "admin.goods.add.name.invalid": "⚠️ Tên không hợp lệ (1–100 ký tự, không chứa ký tự điều khiển).",
+        "admin.goods.add.prompt.description": "Nhập mô tả cho sản phẩm:",
+        "admin.goods.add.prompt.price": "Nhập giá cho sản phẩm (số, đơn vị {currency}):",
+        "admin.goods.add.price.invalid": "⚠️ Giá không hợp lệ. Hãy nhập một số.",
+        "admin.goods.add.prompt.category": "Nhập danh mục của sản phẩm:",
+        "admin.goods.add.category.not_found": "❌ Không thể tạo sản phẩm (danh mục nhập sai)",
+        "admin.goods.add.infinity.question": "Sản phẩm này có hàng không giới hạn không? (mọi người sẽ nhận cùng một bản sao)",
+        "admin.goods.add.values.prompt_multi": (
+            "Nhập các mặt hàng cho sản phẩm, mỗi tin nhắn một mặt hàng.\n"
+            "Khi nhập xong — nhấn «Thêm các mặt hàng đã nhập»."
+        ),
+        "admin.goods.add.values.added": "✅ Mặt hàng «{value}» đã thêm vào danh sách ({count} cái.)",
+        "admin.goods.add.result.created": "✅ Đã tạo sản phẩm.",
+        "admin.goods.add.created_bare": "✅ Đã tạo sản phẩm «{name}» chưa có hàng.\n\nThêm hàng qua «{stock_button}».",
+        "admin.goods.add.result.added": "📦 Đã thêm mặt hàng: <b>{n}</b>",
+        "admin.goods.add.result.skipped_db_dup": "↩️ Bỏ qua (đã có trong CSDL): <b>{n}</b>",
+        "admin.goods.add.result.skipped_batch_dup": "🔁 Bỏ qua (trùng trong lần nhập): <b>{n}</b>",
+        "admin.goods.add.result.skipped_invalid": "🚫 Bỏ qua (trống/không hợp lệ): <b>{n}</b>",
+        "admin.goods.add.single.prompt_value": "Nhập một giá trị mặt hàng cho sản phẩm:",
+        "admin.goods.add.single.empty": "⚠️ Giá trị không được để trống.",
+        "admin.goods.add.single.created": "✅ Đã tạo sản phẩm và thêm giá trị",
+        "btn.add_values_finish": "Thêm các mặt hàng đã nhập",
+        "admin.goods.position.not_found": "❌ Không có mặt hàng (Sản phẩm này không tồn tại)",
+        "admin.goods.list_in_position.empty": "ℹ️ Sản phẩm này chưa có mặt hàng nào.",
+        "admin.goods.list_in_position.title": "Các mặt hàng trong sản phẩm:",
+        "admin.goods.item.invalid": "Dữ liệu không hợp lệ",
+        "admin.goods.item.invalid_id": "ID mặt hàng không hợp lệ",
+        "admin.goods.item.not_found": "Không tìm thấy mặt hàng",
+        "admin.goods.prompt.enter_item_name": "Nhập tên sản phẩm",
+        "admin.goods.menu.title": "⛩️ Menu quản lý sản phẩm",
+
+        # === Admin: Time-limited sales ===
+        "admin.goods.sale_manage": "🔥 Quản lý giảm giá",
+        "admin.sale.prompt.name": "Nhập tên sản phẩm muốn cài giảm giá:",
+        "admin.sale.not_found": "❌ Không tìm thấy sản phẩm tên này.",
+        "admin.sale.current.active": "ℹ️ Giảm giá hiện tại: <b>{percent}%</b> đến <b>{until}</b> (UTC).",
+        "admin.sale.current.none": "ℹ️ Sản phẩm này hiện không giảm giá.",
+        "admin.sale.prompt.percent": "Nhập phần trăm giảm giá (1–100).\nGửi <b>0</b> để tắt giảm giá.",
+        "admin.sale.percent.invalid": "⚠️ Phần trăm không hợp lệ. Hãy nhập số nguyên từ 0 đến 100.",
+        "admin.sale.disabled": "✅ Đã tắt giảm giá cho sản phẩm «{name}».",
+        "admin.sale.prompt.days": "Áp dụng giảm giá trong bao nhiêu ngày? Nhập số nguyên (ví dụ: 3).",
+        "admin.sale.days.invalid": "⚠️ Thời hạn không hợp lệ. Hãy nhập số nguyên ngày lớn hơn 0.",
+        "admin.sale.success": "✅ Đã đặt giảm giá <b>{percent}%</b> cho «{name}» đến <b>{until}</b> (UTC).",
+
+        # === Admin: Goods / Items Update Flow ===
+        "admin.goods.update.amount.prompt.name": "Nhập tên sản phẩm",
+        "admin.goods.update.amount.choose_position": "Chọn sản phẩm để thêm mặt hàng:",
+        "admin.goods.update.amount.no_positions": "❌ Không có sản phẩm đang hoạt động để thêm hàng.",
+        "admin.goods.update.amount.not_exists": "❌ Không thể thêm mặt hàng (sản phẩm này không tồn tại)",
+        "admin.goods.update.amount.infinity_forbidden": "❌ Không thể thêm mặt hàng (sản phẩm này có hàng không giới hạn)",
+        "admin.goods.update.values.result.title": "✅ Đã thêm mặt hàng",
+        "admin.goods.update.position.invalid": "Không tìm thấy sản phẩm.",
+        "admin.goods.update.position.exists": "Sản phẩm tên này đã tồn tại.",
+        "admin.goods.update.prompt.name": "Nhập tên sản phẩm",
+        "admin.goods.update.not_exists": "❌ Không thể sửa sản phẩm (sản phẩm này không tồn tại)",
+        "admin.goods.update.prompt.new_name": "Nhập tên mới cho sản phẩm:",
+        "admin.goods.update.prompt.description": "Nhập mô tả cho sản phẩm:",
+        "admin.goods.update.infinity.make.question": "Bạn muốn đặt hàng không giới hạn cho sản phẩm?",
+        "admin.goods.update.infinity.deny.question": "Bạn muốn tắt hàng không giới hạn?",
+        "admin.goods.update.success": "✅ Đã cập nhật sản phẩm",
+
+        # === Admin: Goods / Items Delete Flow ===
+        "admin.goods.delete.prompt.name": "Nhập tên sản phẩm",
+        "admin.goods.delete.position.not_found": "❌ Không xóa sản phẩm (Sản phẩm này không tồn tại)",
+        "admin.goods.delete.position.success": "✅ Đã xóa sản phẩm",
+        "admin.goods.item.delete.button": "❌ Xóa mặt hàng",
+        "admin.goods.item.already_deleted_or_missing": "Mặt hàng đã bị xóa hoặc không tồn tại",
+        "admin.goods.item.deleted": "✅ Đã xóa mặt hàng",
+
+        # === Admin: Item Info ===
+        "admin.goods.item.info.position": "<b>Sản phẩm</b>: <code>{name}</code>",
+        "admin.goods.item.info.price": "<b>Giá</b>: <code>{price}</code> {currency}",
+        "admin.goods.item.info.id": "<b>ID duy nhất</b>: <code>{id}</code>",
+        "admin.goods.item.info.value": "<b>Mặt hàng</b>: <code>{value}</code>",
+
+        # === Admin: Logs ===
+        "admin.shop.logs.caption": "Nhật ký bot",
+        "admin.shop.logs.empty": "❗️ Chưa có nhật ký",
+        "admin.shop.logs.too_large": "⚠️ Nhật ký quá lớn để gửi ({files}) — hãy lấy từ ổ đĩa.",
+
+        # === Group Notifications ===
+        "shop.group.new_upload": "Hàng mới",
+        "shop.group.item": "Sản phẩm",
+        "shop.group.count": "Số lượng",
+
+        # === Admin: Statistics ===
+        "admin.shop.stats.template": (
+            "Thống kê cửa hàng:\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "<b>◽NGƯỜI DÙNG</b>\n"
+            "◾️Mới trong 24 giờ: {today_users}\n"
+            "◾️Tổng: {users}\n"
+            "◾️Người mua: {buyers}\n"
+            "◾️Đã chặn: {blocked}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>TIỀN</b>\n"
+            "◾Bán trong 24 giờ: {today_orders} {currency} ({today_sold_count} cái.)\n"
+            "◾Tổng đã bán: {all_orders} {currency}\n"
+            "◾Giá trị đơn trung bình: {avg_order} {currency}\n"
+            "◾Nạp trong 24 giờ: {today_topups} {currency}\n"
+            "◾Tiền trong hệ thống: {system_balance} {currency}\n"
+            "◾Tổng đã nạp: {all_topups} {currency}\n"
+            "➖➖➖➖➖➖➖➖➖➖➖➖➖\n"
+            "◽<b>DANH MỤC</b>\n"
+            "◾Còn hàng: {items} cái.\n"
+            "◾Sản phẩm: {goods} cái.\n"
+            "◾Danh mục: {categories} cái.\n"
+            "◾Đã bán: {sold_count} cái."
+        ),
+        "admin.shop.stats.roles_header": "\n➖➖➖➖➖➖➖➖➖➖➖➖➖\n◽<b>VAI TRÒ</b>",
+        # === Admin: Lists & Broadcast ===
+        "admin.shop.users.title": "Người dùng bot:",
+        "admin.shop.bought.prompt_id": "Nhập ID duy nhất của mặt hàng đã mua",
+        "admin.shop.bought.not_found": "❌ Không tìm thấy mặt hàng với ID duy nhất này",
+        "broadcast.prompt": "Gửi tin nhắn cần phát:",
+        "broadcast.creating": "📤 Bắt đầu phát...\n👥 Tổng người dùng: {ids}",
+        "broadcast.progress": (
+            "📤 Đang phát...\n\n"
+            "📊 Tiến độ: {progress:.1f}%\n"
+            "✅ Đã gửi: {sent}/{total}\n"
+            "❌ Lỗi: {failed}\n"
+            "⏱ Đã qua: {time} giây"),
+        "broadcast.done": (
+            "✅ Phát xong!\n\n"
+            "📊 Thống kê:\n"
+            "👥 Tổng: {total}\n"
+            "✅ Đã gửi: {sent}\n"
+            "❌ Thất bại: {failed}\n"
+            "🚫 Đã chặn bot: {blocked}\n"
+            "📈 Tỷ lệ thành công: {success}%\n"
+            "⏱ Thời gian: {duration} giây"
+        ),
+        "broadcast.cancel": "❌ Đã hủy phát tin",
+        "broadcast.warning": "Không có đợt phát nào đang chạy",
+        "broadcast.already_running": "⏳ Đợt phát đang chạy. Hãy đợi hoàn tất.",
+        "broadcast.btn.cancel": "🛑 Hủy phát tin",
+
+        # === Payments / Top-up Flow ===
+        "payments.replenish_prompt": "Nhập số tiền cần nạp, đơn vị {currency}:",
+        "payments.replenish_invalid": "❌ Số tiền không hợp lệ. Hãy nhập số từ {min_amount} đến {max_amount} {currency}.",
+        "payments.deduct_prompt": "Nhập số tiền cần trừ, đơn vị {currency}:",
+        "payments.deduct_invalid": "❌ Số tiền không hợp lệ. Hãy nhập số từ {min_amount} đến {max_amount} {currency}.",
+        "payments.method_choose": "Chọn phương thức thanh toán:",
+        "payments.not_configured": "❌ Chưa cài đặt nạp tiền",
+        "payments.stars.unavailable": "⭐ Thanh toán Telegram Stars tạm thời không khả dụng. Vui lòng chọn phương thức khác.",
+        "payments.sbp_card.stub": (
+            "🏦 <b>SBP / thẻ</b>\n\n"
+            "Phương thức này đang phát triển. Chúng tôi sẽ thêm sau khi chọn và kết nối nhà cung cấp thanh toán.\n\n"
+            "Hiện bạn có thể nạp qua CryptoBot hoặc quản trị viên."
+        ),
+        "payments.platega.setup": "🏦 Thanh toán SBP tạm thời chưa khả dụng. Vui lòng thử lại sau.",
+        "payments.platega.currency_unavailable": "Thanh toán SBP chỉ hỗ trợ giao dịch bằng RUB.",
+        "payments.platega.create_fail": "Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.",
+        "payments.platega.check_fail": "Không thể kiểm tra thanh toán. Vui lòng thử lại sau.",
+        "payments.platega.chargeback_alert": "⚠️ Platega báo hoàn giao dịch {id}: {amount} {currency}. Hãy kiểm tra số dư của người dùng {user_id}.",
+        "payments.crypto.setup": (
+            "💎 <b>Kết nối CryptoBot</b>\n\n"
+            "Để thanh toán tự động cần token Crypto Pay API.\n\n"
+            "1. Mở @CryptoBot và chọn Crypto Pay → My Apps.\n"
+            "2. Tạo ứng dụng và sao chép API token.\n"
+            "3. Thêm vào file <code>.env</code> ở dòng <code>CRYPTO_PAY_TOKEN</code>.\n"
+            "4. Khởi động lại bot.\n\n"
+            "Đừng gửi token vào chat — đó là khóa thanh toán bí mật."
+        ),
+        "payments.admin.info": (
+            "👤 <b>Thanh toán qua quản trị viên</b>\n\n"
+            "Số tiền nạp: <b>{amount} {currency}</b>\n\n"
+            "Nhấn nút bên dưới. Telegram sẽ mở chat với quản trị viên <b>@{username}</b> kèm tin nhắn soạn sẵn:\n\n"
+            "<code>{message}</code>\n\n"
+            "Kiểm tra số tiền rồi nhấn «Gửi». Sau khi xác nhận, quản trị viên sẽ cộng tiền thủ công."
+        ),
+        "payments.admin.prefilled": "Xin chào! Tôi cần nạp số dư {amount} {currency}.",
+        "payments.xrocket.setup": (
+            "🚀 <b>Kết nối xRocket</b>\n\n"
+            "Cần API token của ứng dụng xRocket Pay.\n\n"
+            "1. Mở @xRocket → Pay API → tạo ứng dụng.\n"
+            "2. Trong cài đặt ứng dụng chuyển API Version → Current.\n"
+            "3. Chép 🔑 API Token vào file <code>.env</code> ở dòng <code>XROCKET_PAY_TOKEN</code>.\n"
+            "4. Khởi động lại bot."
+        ),
+        "payments.xrocket.invoice": (
+            "🚀 <b>Thanh toán qua xRocket</b>\n\n"
+            "💵 Cần trả: <b>{asset_amount} {asset}</b> (≈ {fiat_amount} {currency}).\n"
+            "⌛️ Bạn có {minutes} phút để thanh toán.\n"
+            "<b>❗️ Sau khi trả, nhấn «{button}»</b>"
+        ),
+        "payments.manual_crypto.info": (
+            "💱 <b>Trả crypto trực tiếp</b>\n\n"
+            "Số tiền nạp: <b>{amount} {currency}</b> (≈ {usd} USD).\n\n"
+            "Gửi tới <b>đúng một</b> ví (tối thiểu — tương đương <b>0.1 USD</b>). "
+            "Mạng lưới phải khớp, nếu không tiền sẽ mất:\n\n"
+            "💵 USDT (BEP20 / BNB Smart Chain):\n<code>{usdt}</code>\n\n"
+            "💎 TON (The Open Network):\n<code>{ton}</code>\n\n"
+            "◎ SOL (Solana):\n<code>{sol}</code>\n\n"
+            "Sau khi gửi, nhấn nút bên dưới — chat với quản trị viên <b>@{username}</b> sẽ mở kèm tin nhắn soạn sẵn. "
+            "Gửi kèm mã giao dịch (TxHash). Quản trị viên cộng tiền sau 1 xác nhận mạng."
+        ),
+        "payments.manual_crypto.prefilled": (
+            "Xin chào! Tôi đã gửi crypto để nạp {amount} {currency}. TxHash: "
+        ),
+        "payments.session_expired": "Phiên thanh toán đã hết hạn. Hãy bắt đầu lại.",
+        "payments.crypto.create_fail": "❌ Lỗi khi tạo hóa đơn: {error}",
+        "payments.crypto.api_error": "❌ Lỗi CryptoPay API: {error}",
+        "payments.crypto.check_fail": "❌ Lỗi kiểm tra thanh toán: {error}",
+        "payments.stars.create_fail": "❌ Không thể tạo hóa đơn Stars: {error}",
+        "payments.fiat.create_fail": "❌ Không thể tạo hóa đơn: {error}",
+        "payments.no_active_invoice": "❌ Không có hóa đơn nào đang hoạt động. Hãy nạp lại từ đầu.",
+        "payments.invoice_not_found": "❌ Không tìm thấy hóa đơn. Hãy bắt đầu lại.",
+        "payments.not_paid_yet": "⌛️ Hóa đơn chưa được thanh toán.",
+        "payments.expired": "❌ Hóa đơn đã hết hạn.",
+        "payments.invoice.summary": (
+            "💵 Số tiền nạp: {amount} {currency}.\n"
+            "⌛️ Bạn có {minutes} phút để thanh toán.\n"
+            "<b>❗️ Sau khi thanh toán hãy nhấn nút «{button}»</b>"
+        ),
+        "payments.unable_determine_amount": "❌ Không xác định được số tiền thanh toán.",
+        "payments.topped_simple": "✅ Đã nạp {amount} {currency} vào số dư",
+        "payments.topped_with_suffix": "✅ Đã nạp {amount} {currency} vào số dư ({suffix})",
+        "payments.success_suffix.stars": "Telegram Stars",
+        "payments.success_suffix.tg": "Telegram Payments",
+        "payments.referral.bonus": "✅ Bạn nhận được {amount} {currency} từ người được giới thiệu <a href='tg://user?id={id}'>{name}</a>",
+        "payments.invoice.title.topup": "Nạp tiền vào số dư",
+        "payments.invoice.desc.topup.stars": "Nạp {amount} {currency} qua Telegram Stars",
+        "payments.invoice.desc.topup.fiat": "Thanh toán qua Telegram Payments (thẻ)",
+        "payments.invoice.label.fiat": "Nạp {amount} {currency}",
+        "payments.invoice.label.stars": "{stars} ⭐️",
+        "payments.already_processed": "Khoản thanh toán này đã được xử lý ✅",
+        "payments.processing_error": "Lỗi khi xử lý thanh toán. Hãy thử lại sau.",
+        "payments.test.disabled": "❌ Thanh toán thử đã tắt.",
+        "payments.test.success": "🧪 Đã nhận thanh toán thử. Số dư đã tăng {amount} {currency}.",
+        # === Shop Browsing (Categories / Goods / Item Page) ===
+        "shop.categories.title": (
+            "{shop_icon} <b>SẢN PHẨM</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "Chọn danh mục bạn quan tâm.\n"
+            "Giá và mô tả đầy đủ sẽ hiện trong thẻ sản phẩm đã chọn →"
+        ),
+        "shop.goods.choose": (
+            "{category_icon} <b>{category}</b>\n"
+            "━━━━━━━━━━━━━━━━\n\n"
+            "Chọn sản phẩm trong danh sách bên dưới.\n"
+            "Giá và mô tả đầy đủ sẽ hiện trong thẻ sản phẩm."
+        ),
+        "shop.goods.button.in_stock": "{name} | {price} {currency} | {count} cái. ✅",
+        "shop.goods.button.unlimited": "{name} | {price} {currency} | còn hàng ✅",
+        "shop.goods.button.out": "{name} | {price} {currency} | hết hàng ❌",
+        "shop.goods.button.note": "{name} | {price} {currency} | {note}",
+        "shop.search.prompt": "🔍 Nhập tên sản phẩm hoặc từ khóa:",
+        "shop.search.too_short": "Truy vấn phải từ 2 đến 64 ký tự. Hãy thử lại:",
+        "shop.search.results": "🔍 Kết quả cho «{query}» — tìm thấy: {count}",
+        "shop.search.empty": "🔍 Không tìm thấy gì cho «{query}».",
+        "shop.item.not_found": "Không tìm thấy sản phẩm",
+        "shop.item.title": "🛍 <b>{name}</b>\n━━━━━━━━━━━━━━━━",
+        "shop.item.description": "{description}",
+        "shop.item.price": "🌐 <b>Giá 1 cái.</b>: <code>{amount} {currency}</code>",
+        "shop.item.quantity_unlimited": "🔢 <b>Còn hàng</b>: không giới hạn",
+        "shop.item.quantity_left": "🔢 <b>Còn hàng</b>: <code>{count}</code> cái.",
+        "shop.item.bulk": "📦 <b>Sỉ</b>: từ {min_qty} cái — giảm {pct}%",
+        "shop.item.availability_note": "🔔 <b>Hàng về</b>: {note}",
+        "shop.insufficient_funds": "❌ Số dư không đủ",
+        "shop.insufficient_funds.topup": (
+            "❌ <b>Không đủ tiền để mua</b>\n\n"
+            "Hãy nạp <b>{amount} {currency}</b> để đặt hàng.\n"
+            "Chọn phương thức thanh toán:"
+        ),
+        "shop.out_of_stock": "❌ Sản phẩm đã hết hàng",
+        "shop.purchase.success": "✅ Đã mua sản phẩm. <b>Số dư</b>: <i>{balance}</i> {currency}\n\n{value}",
+        "shop.purchase.receipt": "✅ Đặt hàng thành công!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Sản phẩm: {item_name}\n💰 Giá 1 cái.: {price} {currency}\n📦 Số lượng: {quantity} cái.\n💡 Đơn hàng: {unique_id}\n🕐 Thời gian: {datetime}\n💲 Tổng: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Giá trị:\n<code>{value}</code>",
+        "shop.purchase.processing": "⏳ Đang xử lý đơn mua...",
+        "shop.purchase.choose_quantity": (
+            "🛍 <b>{item_name}</b>\n"
+            "━━━━━━━━━━━━━━━━\n"
+            "Chọn số lượng sản phẩm.\n\n"
+            "📦 Số lượng: <b>{quantity}</b> / <b>{max_quantity}</b>\n"
+            "💰 Giá 1 cái.: <b>{unit_price} {currency}</b>\n"
+            "💵 Tổng: <b>{total_price} {currency}</b>\n"
+            "💳 Số dư của bạn: <b>{balance} {currency}</b>"
+        ),
+        "shop.purchase.bulk": "📦 Đã áp dụng chiết khấu sỉ −{pct}% (từ {min_qty} cái).",
+        "shop.purchase.bulk_available": "📦 Giảm giá sỉ −{pct}% khi mua từ {min_qty} cái.",
+        "shop.purchase.insufficient": (
+            "❌ <b>Số dư không đủ</b>\n\n"
+            "Sản phẩm: <b>{item_name}</b>\n"
+            "📦 Số lượng: <b>{quantity}</b>\n"
+            "💵 Cần trả: <b>{total_price} {currency}</b>\n"
+            "💳 Số dư của bạn: <b>{balance} {currency}</b>\n"
+            "➕ Cần nạp thêm: <b>{missing} {currency}</b>"
+        ),
+        "shop.purchase.fail.user_not_found": "❌ Không tìm thấy người dùng trong hệ thống",
+        "shop.purchase.fail.general": "❌ Lỗi khi mua: {message}",
+
+        # === Purchases ===
+        "purchases.title": "📦 <b>Đơn hàng của tôi</b>\n\nTrang {page}/{pages}",
+        "purchases.button": "📦 #{id} | {name} | {price} {currency}",
+        "purchases.empty": "Bạn chưa có đơn hàng nào.",
+        "purchases.pagination.invalid": "Dữ liệu phân trang không hợp lệ",
+        "purchases.item.not_found": "Không tìm thấy đơn mua",
+        "purchases.item.name": "<b>🧾 Sản phẩm</b>: <code>{name}</code>",
+        "purchases.item.price": "<b>💵 Giá</b>: <code>{amount}</code> {currency}",
+        "purchases.item.datetime": "<b>🕒 Ngày mua</b>: <code>{dt}</code>",
+        "purchases.item.unique_id": "<b>🧾 ID duy nhất</b>: <code>{uid}</code>",
+        "purchases.item.value": "<b>🔑 Giá trị</b>:\n<code>{value}</code>",
+        "purchases.item.buyer": "<b>Người mua</b>: <code>{buyer}</code>",
+
+        # === Middleware ===
+        "middleware.ban": "⏳ Bạn bị chặn tạm thời. Hãy đợi {time} giây",
+        "middleware.above_limits": "⚠️ Quá nhiều yêu cầu! Bạn bị chặn tạm thời.",
+        "middleware.waiting": "⏳ Hãy đợi {time} giây trước thao tác tiếp theo.",
+        "middleware.security.session_outdated": "⚠️ Phiên đã hết hạn. Hãy bắt đầu lại.",
+        "middleware.security.invalid_data": "❌ Dữ liệu không hợp lệ",
+        "middleware.security.blocked": "❌ Truy cập bị chặn",
+        "middleware.security.not_admin": "⛔ Không đủ quyền",
+        "middleware.security.invalid_csrf": "⚠️ Phiên đã hết hạn. Hãy thử lại.",
+        "maintenance.active": "🔧 Bot đang bảo trì. Hãy thử lại sau.",
+
+        # === Admin: Maintenance ===
+        "admin.menu.maintenance_on": "🔧 Bảo trì: BẬT",
+        "admin.menu.maintenance_off": "🔧 Bảo trì: TẮT",
+        "admin.maintenance.enabled": "✅ Đã bật chế độ bảo trì",
+        "admin.maintenance.disabled": "✅ Đã tắt chế độ bảo trì",
+
+        # === Promo Codes ===
+        "btn.apply_promo": "🏷 Áp mã giảm giá",
+        "btn.remove_promo": "❌ Gỡ mã giảm giá",
+        "admin.menu.promo": "🏷 Mã giảm giá",
+        "admin.promo.title": "🏷 <b>Quản lý mã giảm giá</b>",
+        "admin.promo.create": "➕ Tạo mã giảm giá",
+        "admin.promo.list_empty": "Chưa có mã giảm giá nào.",
+        "admin.promo.prompt.code": "Nhập mã giảm giá (tối đa 50 ký tự):",
+        "admin.promo.prompt.type": "Chọn loại giảm giá:",
+        "admin.promo.type.percent": "📊 Phần trăm (%)",
+        "admin.promo.type.fixed": "💰 Số tiền cố định",
+        "admin.promo.prompt.value": "Nhập mức giảm ({type}):",
+        "admin.promo.prompt.max_uses": "Nhập số lần dùng tối đa (0 = không giới hạn):",
+        "admin.promo.prompt.expires": "Nhập ngày hết hạn cuối (YYYY-MM-DD) — mã có hiệu lực đến hết ngày đó, hoặc 0 — không thời hạn:",
+        "admin.promo.prompt.binding": "Gắn với danh mục/sản phẩm?\n\nGửi:\n• Tên danh mục\n• Tên sản phẩm\n• 0 — không gắn",
+        "admin.promo.created": "✅ Đã tạo mã giảm giá <code>{code}</code>!",
+        "admin.promo.code_exists": "❌ Mã giảm giá này đã tồn tại.",
+        "admin.promo.invalid_code": "❌ Mã chỉ gồm chữ, số và gạch ngang (tối đa 50 ký tự).",
+        "admin.promo.deleted": "✅ Đã xóa mã giảm giá.",
+        "admin.promo.toggled_on": "✅ Đã kích hoạt mã giảm giá.",
+        "admin.promo.toggled_off": "⛔ Đã tắt mã giảm giá.",
+        "admin.promo.btn.activate": "✅ Kích hoạt",
+        "admin.promo.btn.deactivate": "⛔ Tắt",
+        "admin.promo.btn.delete": "🗑 Xóa",
+        "admin.promo.detail": "🏷 <b>Mã giảm giá</b>: <code>{code}</code>\n📊 Loại: {discount_type}\n💰 Mức giảm: {discount_value}\n🔗 Áp dụng cho: {binding}\n🔢 Lượt dùng: {current_uses}/{max_uses}\n📅 Hết hạn: {expires_at}\n✅ Đang hoạt động: {is_active}",
+        "admin.promo.confirm_delete": "Xóa mã giảm giá <code>{code}</code>?",
+        "admin.promo.invalid_value": "❌ Giá trị không hợp lệ. Hãy thử lại.",
+        "admin.promo.invalid_date": "❌ Ngày không hợp lệ. Định dạng: YYYY-MM-DD",
+        "promo.not_found": "❌ Không tìm thấy mã giảm giá.",
+        "promo.zero_total": "❌ Mã này làm giá về 0. Không thể đặt hàng — hãy liên hệ hỗ trợ.",
+        "promo.inactive": "❌ Mã giảm giá không hoạt động.",
+        "promo.expired": "❌ Mã giảm giá đã hết hạn.",
+        "promo.max_uses_reached": "❌ Mã giảm giá đã hết lượt.",
+        "promo.already_used": "❌ Bạn đã dùng mã giảm giá này.",
+        "promo.wrong_item": "❌ Mã giảm giá không áp dụng cho sản phẩm này.",
+        "promo.wrong_category": "❌ Mã giảm giá không áp dụng cho danh mục này.",
+        "promo.applied": "✅ Đã áp mã <code>{code}</code>! Giảm giá: {discount}",
+        "promo.enter_code": "Nhập mã giảm giá:",
+        "promo.removed": "Đã gỡ mã giảm giá.",
+        "promo.not_balance_type": "❌ Mã này không phải mã nạp số dư.",
+        "promo.enter_redeem_code": "Nhập mã để kích hoạt:",
+        "promo.balance_redeemed": "✅ Đã kích hoạt mã <code>{code}</code>! Số dư tăng {amount} {currency}.",
+        "shop.item.price_discounted": "💰 <b>Giá</b>: <s>{original}</s> <b>{discounted}</b> {currency} (mã {code})",
+        "shop.item.price_sale": "🔥 <b>Giá</b>: <s>{original}</s> <b>{sale}</b> {currency} (giảm {percent}%)",
+        "admin.promo.type.balance": "💰 Nạp số dư",
+        "admin.promo.prompt.binding_type": "Gắn mã với danh mục hay sản phẩm?",
+        "admin.promo.binding.category": "Danh mục",
+        "admin.promo.binding.item": "Sản phẩm",
+        "admin.promo.binding.none": "Không gắn",
+        "admin.promo.binding.on_category": "danh mục «{name}»",
+        "admin.promo.binding.on_item": "sản phẩm «{name}»",
+        "admin.promo.binding.dangling": "⚠️ đã gỡ gắn kết — mã không áp dụng vào đâu",
+        "admin.promo.prompt.category_name": "Nhập tên danh mục:",
+        "admin.promo.prompt.item_name": "Nhập tên sản phẩm:",
+        "admin.promo.category_not_found": "❌ Không tìm thấy danh mục.",
+        "admin.promo.item_not_found": "❌ Không tìm thấy sản phẩm.",
+        "btn.redeem_promo": "Kích hoạt mã",
+        "review.disabled": "Đánh giá đang tắt.",
+        # === Cart ===
+        "btn.cart": "Giỏ hàng ({count})",
+        "btn.cart_empty": "🛒 Giỏ hàng",
+        "btn.add_to_cart": "🛒 Thêm vào giỏ",
+        "btn.cart_checkout": "💳 Đặt hàng",
+        "btn.cart_clear": "🗑 Xóa giỏ hàng",
+        "btn.cart_remove_item": "❌ {name}",
+        "btn.cart_remove_promo": "🏷 Gỡ mã {code}",
+        "btn.cart_receipt_all": "📋 Tất cả đơn mua",
+        "cart.title": "🛒 <b>Giỏ hàng</b>",
+        "cart.empty": "Giỏ hàng trống.",
+        "cart.item": "• {name} ×{qty} — {price} {currency}",
+        "cart.item_sale": "🔥 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency}",
+        "cart.item_bulk": "📦 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} (−{pct}% sỉ)",
+        "cart.item_promo": "🏷 <b>{name}</b> ×{qty} — <s>{original}</s> {price} {currency} ({code})",
+        "cart.item_promo_invalid": "⚠️ <b>{name}</b> ×{qty} — {price} {currency}\n    mã {code} không áp dụng cho sản phẩm này",
+        "cart.item_promo_elsewhere": "• {name} ×{qty} — {price} {currency}\n    mã {code} đã dùng ở sản phẩm khác",
+        "cart.total": "\n💰 <b>Tổng</b>: {total} {currency}",
+        "cart.added": "✅ {name} đã thêm vào giỏ.",
+        "cart.full": "❌ Giỏ đầy (tối đa 10 sản phẩm).",
+        "cart.qty_max": "❌ Tối đa {max} cái một sản phẩm.",
+        "cart.out_of_stock": "Không đủ hàng trong kho. Hãy giảm số lượng rồi thử lại.",
+        "cart.price_changed": "Giá trong giỏ đã đổi. Hãy mở giỏ và xác nhận số tiền mới.",
+        "cart.item_not_found": "❌ Không tìm thấy sản phẩm.",
+        "cart.removed": "✅ Đã xóa sản phẩm khỏi giỏ.",
+        "cart.cleared": "✅ Đã xóa giỏ hàng.",
+        "cart.checkout_confirm": "Đặt hàng {count} sản phẩm với {total} {currency}?",
+        "cart.checkout_success": "✅ Đặt hàng xong! Đã mua {count} sản phẩm.\n\n💰 Số dư còn: {balance} {currency}",
+        "cart.checkout_receipt": "✅ Đặt hàng xong!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📦 Số lượng: {count} cái.\n💲 Tổng: {total} {currency}\n🕐 Thời gian: {datetime}\n➖➖➖➖➖➖➖➖➖➖➖➖\nNhấn vào sản phẩm để xem:",
+        "cart.checkout_fail": "❌ Không thể đặt hàng: {reason}",
+        "cart.items_unavailable": "Một số sản phẩm không còn và đã bị xóa khỏi giỏ.",
+
+
+        # === Stock Subscriptions ===
+        "btn.notify_stock": "🔔 Báo khi có hàng",
+        "btn.notify_stock_off": "🔕 Không báo nữa",
+        "stock.subscribed": "🔔 Sẽ báo khi sản phẩm có hàng.",
+        "stock.unsubscribed": "🔕 Đã tắt thông báo.",
+        "stock.back_in_stock": "🔔 Sản phẩm <b>{name}</b> đã có hàng! Đã thêm: <b>{count}</b>.",
+
+
+        # === Operation History ===
+        "btn.operation_history": "📋 Lịch sử giao dịch",
+        "history.title": "📋 <b>Lịch sử giao dịch</b>",
+        "history.empty": "Lịch sử giao dịch trống.",
+        "history.topup": "💰 Nạp tiền: +{amount} {currency}",
+        "history.purchase": "🛒 Mua hàng: {amount} {currency}",
+        "history.referral": "🎲 Thưởng giới thiệu: +{amount} {currency}",
+        "history.date": "📅 {date}",
+
+        # === Reviews ===
+        "btn.leave_review": "⭐ Viết đánh giá",
+        "btn.view_reviews": "📝 Đánh giá ({count})",
+        "btn.skip_review_text": "⏭ Bỏ qua nội dung",
+        "review.prompt_rating": "Đánh giá sản phẩm <b>{name}</b> từ 1 đến 5:",
+        "review.prompt_text": "Viết nội dung đánh giá (tối đa 500 ký tự) hoặc nhấn «Bỏ qua»:",
+        "review.created": "✅ Cảm ơn bạn đã đánh giá!",
+        "review.already_exists": "Bạn đã đánh giá sản phẩm này.",
+        "review.not_purchased": "Bạn chưa mua sản phẩm này.",
+        "review.avg_rating": "⭐ Đánh giá: {rating}/5 ({count} lượt)",
+        "review.item": "⭐ {rating}/5 — {text}",
+        "review.item_no_text": "⭐ {rating}/5",
+        "review.list_title": "📝 <b>Đánh giá về {name}</b>",
+        "review.list_empty": "Chưa có đánh giá nào.",
+
+        # === Errors ===
+        "errors.not_subscribed": "Bạn chưa đăng ký",
+        "errors.something_wrong": "❌ Có lỗi xảy ra. Hãy thử lại.",
+        "errors.pagination_invalid": "Dữ liệu phân trang không hợp lệ",
+        "errors.invalid_data": "❌ Dữ liệu không hợp lệ",
+        "errors.id_should_be_number": "❌ ID phải là số.",
+        "errors.channel.telegram_not_found": "Tôi không thể viết vào kênh. Hãy thêm tôi làm quản trị viên kênh đăng hàng @{channel} với quyền đăng bài.",
+        "errors.channel.telegram_forbidden_error": "Không tìm thấy kênh. Hãy kiểm tra username kênh đăng hàng @{channel}.",
+        "errors.channel.telegram_bad_request": "Không thể gửi vào kênh đăng hàng: {e}",
+        "errors.general_error": "❌ Lỗi: {e}",
+        "errors.invalid_item_name": "❌ Tên sản phẩm không hợp lệ",
+        "errors.invalid_user": "❌ Người dùng không hợp lệ",
+    },
+}
