@@ -390,7 +390,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "broadcast.btn.cancel": "🛑 Отменить рассылку",
 
         # === Payments / Top-up Flow ===
-        "payments.replenish_prompt": "Введите сумму пополнения в {currency}:",
+        "payments.replenish_prompt": "Выберите сумму пополнения или введите её сообщением ({currency}):",
         "payments.replenish_invalid": "❌ Неверная сумма. Введите число от {min_amount} до {max_amount} {currency}.",
         "payments.deduct_prompt": "Введите сумму списания в {currency}:",
         "payments.deduct_invalid": "❌ Неверная сумма. Введите число от {min_amount} до {max_amount} {currency}.",
@@ -1116,7 +1116,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "broadcast.btn.cancel": "🛑 Cancel broadcast",
 
         # === Payments / Top-up Flow ===
-        "payments.replenish_prompt": "Enter top-up amount in {currency}:",
+        "payments.replenish_prompt": "Choose a top-up amount or enter your own in chat ({currency}):",
         "payments.replenish_invalid": "❌ Invalid amount. Enter a number from {min_amount} to {max_amount} {currency}.",
         "payments.deduct_prompt": "Enter deduction amount in {currency}:",
         "payments.deduct_invalid": "❌ Invalid amount. Enter a number from {min_amount} to {max_amount} {currency}.",
@@ -1836,7 +1836,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "broadcast.btn.cancel": "🛑 Hủy phát tin",
 
         # === Payments / Top-up Flow ===
-        "payments.replenish_prompt": "Nhập số tiền cần nạp, đơn vị {currency}:",
+        "payments.replenish_prompt": "Chọn số tiền nạp hoặc nhập tin nhắn ({currency}):",
         "payments.replenish_invalid": "❌ Số tiền không hợp lệ. Hãy nhập số từ {min_amount} đến {max_amount} {currency}.",
         "payments.deduct_prompt": "Nhập số tiền cần trừ, đơn vị {currency}:",
         "payments.deduct_invalid": "❌ Số tiền không hợp lệ. Hãy nhập số từ {min_amount} đến {max_amount} {currency}.",

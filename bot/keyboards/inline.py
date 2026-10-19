@@ -400,27 +400,33 @@ def admin_payment_keyboard(pay_url: str, username: str) -> InlineKeyboardMarkup:
     return colorize_markup(kb.as_markup())
 
 
-def get_payment_choice() -> InlineKeyboardMarkup:
+def get_payment_choice(currency: str | None = None) -> InlineKeyboardMarkup:
     """
-    Select a payment method.
+    Select a payment method, filtered and ordered by currency.
     """
-    methods = [
-        (localize("btn.pay.sbp_card"), "pay_sbp_card"),
-        # CryptoBot is shown even before its token is configured so the bot
-        # can explain the one-time setup instead of hiding the option.
+    from bot.misc.currency import get_user_currency
+    curr = (currency or get_user_currency()).upper()
+
+    methods = []
+    # Platega (SBP / RU cards) only supports RUB
+    if curr != "USD":
+        methods.append((localize("btn.pay.sbp_card"), "pay_sbp_card"))
+
+    methods.extend([
         (localize("btn.pay.crypto"), "pay_cryptopay"),
-        # Same for xRocket: without a token the bot shows setup instructions.
         (localize("btn.pay.xrocket"), "pay_xrocket"),
-        # Manual top-ups are available without an external payment service.
-        (localize("btn.pay.admin"), "pay_admin"),
-    ]
-    # Manual wallet transfer is shown only when its single receiving address is configured.
+    ])
+
     if getattr(EnvKeys, "MANUAL_USDT_BEP20", ""):
-        methods.insert(3, (localize("btn.pay.manual_crypto"), "pay_manual_crypto"))
+        methods.append((localize("btn.pay.manual_crypto"), "pay_manual_crypto"))
+
+    methods.append((localize("btn.pay.admin"), "pay_admin"))
+
     if EnvKeys.TELEGRAM_PROVIDER_TOKEN:
         methods.append((localize("btn.pay.tg"), "pay_fiat"))
     if EnvKeys.TEST_PAYMENT_ENABLED == "1":
         methods.append((localize("btn.pay.test"), "pay_test"))
+
     methods.append((localize("btn.back"), "replenish_balance"))
     methods.append((localize("btn.main_menu"), "back_to_menu"))
     return simple_buttons(methods, per_row=1)

@@ -5,7 +5,11 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, ROUND_UP
 from urllib.parse import quote
 
 from aiogram import Router, F
-from aiogram.types import CallbackQuery, Message, PreCheckoutQuery, SuccessfulPayment
+from aiogram.types import (
+    CallbackQuery, Message, PreCheckoutQuery, SuccessfulPayment,
+    InlineKeyboardButton, InlineKeyboardMarkup,
+)
+from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 
@@ -74,12 +78,26 @@ async def _fail_payment_intent(provider: str, intent_id: str) -> None:
         logger.error("Could not mark payment intent %s/%s failed", provider, intent_id, exc_info=True)
 
 
-def _balance_prompt_keyboard():
-    """Navigation for the amount prompt, including a direct main-menu exit."""
-    return simple_buttons([
-        (localize("btn.back"), "profile"),
-        (localize("btn.main_menu"), "back_to_menu"),
-    ])
+def _balance_prompt_keyboard(currency: str | None = None) -> InlineKeyboardMarkup:
+    """Presets grid for fast top-up, plus Back and Main Menu."""
+    curr = (currency or get_user_currency()).upper()
+    kb = InlineKeyboardBuilder()
+    if curr == "USD":
+        presets = [("$5", 5), ("$10", 10), ("$25", 25), ("$50", 50), ("$100", 100)]
+        for label, val in presets:
+            kb.button(text=label, callback_data=f"topup_preset:{val}")
+        kb.adjust(2, 3)
+    else:
+        presets = [("500 ₽", 500), ("1 000 ₽", 1000), ("2 500 ₽", 2500), ("5 000 ₽", 5000)]
+        for label, val in presets:
+            kb.button(text=label, callback_data=f"topup_preset:{val}")
+        kb.adjust(2, 2)
+
+    kb.row(
+        InlineKeyboardButton(text=localize("btn.back"), callback_data="profile"),
+        InlineKeyboardButton(text=localize("btn.main_menu"), callback_data="back_to_menu"),
+    )
+    return kb.as_markup()
 
 
 async def _topup_amount_for_item(
@@ -357,10 +375,50 @@ async def replenish_balance_callback_handler(call: CallbackQuery, state: FSMCont
     await edit_screen(
         call,
         localize("payments.replenish_prompt", currency=curr_label),
-        reply_markup=_balance_prompt_keyboard(),
+        reply_markup=_balance_prompt_keyboard(curr),
         screen="balance",
     )
     await state.set_state(BalanceStates.waiting_amount)
+
+
+@router.callback_query(F.data.startswith("topup_preset:"))
+async def topup_preset_callback_handler(call: CallbackQuery, state: FSMContext):
+    """Handle instant selection of preset top-up amount."""
+    if await ensure_user(call.from_user.id) is None:
+        await call.answer(localize("errors.something_wrong"), show_alert=True)
+        return
+
+    raw_val = call.data.split(":", 1)[1]
+    try:
+        val = int(raw_val)
+    except (ValueError, TypeError):
+        await call.answer(localize("errors.invalid_data"), show_alert=True)
+        return
+
+    curr = get_user_currency()
+    if curr == "USD":
+        amount_usd = float(val)
+        amount_rub = usd_to_rub(val)
+        amount_val = int(amount_rub)
+    else:
+        amount_val = val
+        amount_usd = float(rub_to_usd(val))
+
+    await state.update_data(
+        amount=amount_val,
+        amount_usd=amount_usd,
+        user_currency=curr,
+        test_payment_id=secrets.token_urlsafe(24),
+    )
+
+    await edit_screen(
+        call,
+        localize("payments.method_choose"),
+        reply_markup=get_payment_choice(curr),
+        screen="balance",
+    )
+    await state.set_state(BalanceStates.waiting_payment)
+    await call.answer()
 
 
 @router.message(BalanceStates.waiting_amount, ValidAmountFilter())
@@ -393,7 +451,7 @@ async def replenish_balance_amount(message: Message, state: FSMContext):
         await answer_screen(
             message,
             localize("payments.method_choose"),
-            reply_markup=get_payment_choice(),
+            reply_markup=get_payment_choice(curr),
             screen="balance",
         )
         await state.set_state(BalanceStates.waiting_payment)
