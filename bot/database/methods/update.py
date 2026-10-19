@@ -45,6 +45,37 @@ async def set_user_locale(telegram_id: int, locale: str) -> bool:
     return changed
 
 
+async def set_user_currency(telegram_id: int, currency: str) -> bool:
+    """Persist a supported per-user currency ('RUB', 'USD') and invalidate cache."""
+    normalized = (currency or "").upper().strip()
+    if normalized not in {"RUB", "USD"}:
+        return False
+    async with Database().session() as s:
+        result = await s.execute(
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(currency=normalized)
+        )
+        changed = result.rowcount > 0
+    if changed:
+        safe_create_task(invalidate_user_cache(telegram_id))
+    return changed
+
+
+async def set_user_onboarded(telegram_id: int, onboarded: bool = True) -> bool:
+    """Mark that user completed initial language/currency setup."""
+    async with Database().session() as s:
+        result = await s.execute(
+            update(User)
+            .where(User.telegram_id == telegram_id)
+            .values(is_onboarded=bool(onboarded))
+        )
+        changed = result.rowcount > 0
+    if changed:
+        safe_create_task(invalidate_user_cache(telegram_id))
+    return changed
+
+
 async def set_community_prompt_seen(telegram_id: int, seen: bool = True) -> bool:
     """Persist that an existing user has answered the optional chat invite."""
     async with Database().session() as s:

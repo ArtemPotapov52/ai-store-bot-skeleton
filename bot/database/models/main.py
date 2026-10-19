@@ -133,6 +133,8 @@ class User(Database.BASE):
         DateTime(timezone=True), nullable=False, server_default=func.now())
     is_blocked: Mapped[Optional[bool]] = mapped_column(Boolean, default=False, index=True)
     locale: Mapped[str] = mapped_column(String(5), nullable=False, default="ru")
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="RUB", server_default="RUB")
+    is_onboarded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="true")
     # Retained for compatibility with older deployments. The subscription
     # middleware now requires the community chat for every account.
     community_chat_required: Mapped[bool] = mapped_column(
@@ -827,5 +829,17 @@ class VpnSubscriptionLink(Database.BASE):
 
 
 async def register_models():
-    """Seed the built-in roles (USER/ADMIN/OWNER)."""
+    """Seed the built-in roles (USER/ADMIN/OWNER) and ensure user columns."""
+    from sqlalchemy import text
+    from bot.logger_mesh import logger
+    try:
+        async with Database().session() as s:
+            await s.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS currency VARCHAR(8) NOT NULL DEFAULT 'RUB';")
+            )
+            await s.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_onboarded BOOLEAN NOT NULL DEFAULT TRUE;")
+            )
+    except Exception:
+        logger.debug("Automatic user column check skipped or failed", exc_info=True)
     await Role.insert_roles()

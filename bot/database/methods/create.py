@@ -46,6 +46,8 @@ async def create_user(telegram_id: int, registration_date: datetime, referral_id
                 role_id=role,
                 registration_date=registration_date,
                 referral_id=referral_id,
+                currency="RUB",
+                is_onboarded=False,
             )
         )
         try:

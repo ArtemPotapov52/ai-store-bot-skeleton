@@ -13,6 +13,7 @@ from bot.database.methods.delete import remove_from_cart, clear_cart
 from bot.database.methods.transactions import checkout_cart_transaction
 from bot.keyboards.inline import back, simple_buttons, cart_keyboard
 from bot.misc import EnvKeys
+from bot.misc.currency import get_user_currency, rub_to_usd
 from bot.misc.screens import edit_screen
 from bot.i18n import localize, esc, format_dt
 from bot.handlers.user.main import ensure_user
@@ -72,6 +73,7 @@ async def _show_cart(call: CallbackQuery):
 
     lines = [localize("cart.title"), ""]
 
+    curr = get_user_currency()
     for item in items:
         qty = item['quantity']
         name = esc(item['item_name'])
@@ -79,16 +81,30 @@ async def _show_cart(call: CallbackQuery):
         if ld is None:
             lines.append(localize(
                 "cart.item", name=name, qty=qty,
-                price='?', currency=EnvKeys.PAY_CURRENCY,
+                price='?', currency="USD" if curr == "USD" else EnvKeys.PAY_CURRENCY,
             ))
             continue
 
+        if curr == "USD":
+            price_disp = f"${rub_to_usd(ld['line_total']):.2f}"
+            curr_disp = "USD"
+        else:
+            price_disp = str(ld['line_total'])
+            curr_disp = EnvKeys.PAY_CURRENCY
+
         lines.append(localize(
             "cart.item", name=name, qty=qty,
-            price=ld['line_total'], currency=EnvKeys.PAY_CURRENCY,
+            price=price_disp, currency=curr_disp,
         ))
 
-    lines.append(localize("cart.total", total=real_total, currency=EnvKeys.PAY_CURRENCY))
+    if curr == "USD":
+        total_disp = f"${rub_to_usd(real_total):.2f}"
+        curr_disp = "USD"
+    else:
+        total_disp = str(real_total)
+        curr_disp = EnvKeys.PAY_CURRENCY
+
+    lines.append(localize("cart.total", total=total_disp, currency=curr_disp))
 
     try:
         await edit_screen(
@@ -294,13 +310,21 @@ async def cart_checkout_confirm_handler(call: CallbackQuery, state: FSMContext):
         cart_receipt_total=str(total),
     )
 
+    curr = get_user_currency()
+    if curr == "USD":
+        total_disp = f"${rub_to_usd(total):.2f}"
+        curr_disp = "USD"
+    else:
+        total_disp = str(total)
+        curr_disp = EnvKeys.PAY_CURRENCY
+
     await edit_screen(
         call,
         localize(
             "cart.checkout_receipt",
             count=len(results),
-            total=total,
-            currency=EnvKeys.PAY_CURRENCY,
+            total=total_disp,
+            currency=curr_disp,
             datetime=dt,
         ),
         reply_markup=_receipt_keyboard(results),

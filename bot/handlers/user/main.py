@@ -16,14 +16,25 @@ from bot.database.methods import (
     get_default_user_role_id,
     select_user_spent_total, select_user_items,
     check_user_referrals, set_user_locale, set_role,
-    set_community_prompt_seen,
+    set_community_prompt_seen, set_user_currency, set_user_onboarded,
 )
 from bot.database.methods.read import get_cart_count, get_item_name_by_id, invalidate_user_cache
 from bot.database.methods.lazy_queries import query_user_operations_history
 from bot.handlers.other import _parse_channel_username
 from bot.keyboards import main_menu, back, profile_keyboard, language_keyboard, legal_keyboard
+from bot.keyboards.inline import (
+    onboarding_language_keyboard,
+    onboarding_currency_keyboard,
+    language_and_currency_keyboard,
+)
 from bot.keyboards.styles import colorize_markup
 from bot.misc import EnvKeys
+from bot.misc.currency import (
+    get_user_currency,
+    set_user_currency_context,
+    reset_user_currency_context,
+    rub_to_usd,
+)
 from bot.misc.timezone import format_moscow_date
 from bot.misc.screens import answer_screen, edit_screen
 from bot.misc.metrics import get_metrics
@@ -284,6 +295,19 @@ async def start(message: Message, state: FSMContext):
 
     user_row = await check_user(user_id)
 
+    # Check if this user needs initial onboarding (first start: language & currency selection)
+    is_onboarded = bool(user_row.get("is_onboarded", True)) if user_row else True
+    if existing_user is None or not is_onboarded:
+        if linked_item_id is not None:
+            await state.update_data(onboarding_item_id=linked_item_id)
+        await answer_screen(
+            message,
+            localize("onboarding.lang.title"),
+            reply_markup=onboarding_language_keyboard(),
+            screen="language",
+        )
+        return
+
     if user_row:
         try:
             from bot.database.methods.bot_activity import record_bot_activity
@@ -426,12 +450,93 @@ async def support_callback_handler(call: CallbackQuery):
     await call.answer(localize("support.not_set"), show_alert=True)
 
 
+@router.callback_query(F.data.startswith("onboarding:lang:"))
+async def onboarding_lang_callback_handler(call: CallbackQuery, state: FSMContext):
+    locale = call.data.split(":", 2)[2].lower()
+    user_id = call.from_user.id
+    await ensure_user(user_id)
+    await set_user_locale(user_id, locale)
+    token = set_locale(locale)
+    try:
+        await edit_screen(
+            call,
+            localize("onboarding.curr.title"),
+            reply_markup=onboarding_currency_keyboard(),
+            screen="language",
+        )
+        await call.answer()
+    finally:
+        reset_locale(token)
+
+
+@router.callback_query(F.data.startswith("onboarding:curr:"))
+async def onboarding_curr_callback_handler(call: CallbackQuery, state: FSMContext):
+    currency = call.data.split(":", 2)[2].upper()
+    user_id = call.from_user.id
+    await ensure_user(user_id)
+    await set_user_currency(user_id, currency)
+    await set_user_onboarded(user_id, True)
+
+    token_curr = set_user_currency_context(currency)
+    try:
+        data = await state.get_data()
+        linked_item_id = data.get("onboarding_item_id")
+        user_row = await check_user(user_id)
+        channel_username = _parse_channel_username()
+        gate = await build_subscription_gate(call.bot, user_id, user_row)
+        if gate:
+            await edit_screen(
+                call,
+                gate[0],
+                reply_markup=gate[1],
+                screen="main-menu",
+            )
+            return
+
+        if linked_item_id is not None:
+            item_name = await get_item_name_by_id(linked_item_id)
+            if item_name:
+                from bot.handlers.user.shop_and_goods import _open_item
+                await _open_item(
+                    call.message,
+                    state,
+                    item_name,
+                    back_data="back_to_menu",
+                )
+                return
+
+        role = await check_role_cached(user_id) or 0
+        markup = _main_markup(role, channel_username)
+        await edit_screen(
+            call,
+            _main_text(call.from_user),
+            reply_markup=markup,
+            screen="main-menu",
+        )
+        await call.answer(localize("onboarding.done"))
+    finally:
+        reset_user_currency_context(token_curr)
+    await state.clear()
+
+
 @router.callback_query(F.data == "language")
 async def language_callback_handler(call: CallbackQuery):
+    user_row = await check_user(call.from_user.id)
+    cur_lang = (user_row.get("locale") if user_row else None) or get_locale()
+    cur_curr = (user_row.get("currency") if user_row else None) or get_user_currency()
+
+    lang_names = {"ru": "Русский 🇷🇺", "en": "English 🇬🇧", "vi": "Tiếng Việt 🇻🇳"}
+    curr_names = {"RUB": "RUB (₽)", "USD": "USD ($)"}
+
+    text = localize(
+        "settings.lang_curr.title",
+        lang_name=lang_names.get(cur_lang, cur_lang),
+        curr_name=curr_names.get(cur_curr, cur_curr),
+    )
     await edit_screen(
         call,
-        localize("language.title"),
-        reply_markup=language_keyboard(),
+        text,
+        reply_markup=language_and_currency_keyboard(cur_lang, cur_curr),
         screen="language",
     )
 
@@ -446,18 +551,54 @@ async def set_language_callback_handler(call: CallbackQuery, state: FSMContext):
 
     token = set_locale(locale)
     try:
-        role = await check_role_cached(call.from_user.id) or 0
-        markup = _main_markup(role, _parse_channel_username())
+        user_row = await check_user(call.from_user.id)
+        cur_curr = (user_row.get("currency") if user_row else None) or get_user_currency()
+        lang_names = {"ru": "Русский 🇷🇺", "en": "English 🇬🇧", "vi": "Tiếng Việt 🇻🇳"}
+        curr_names = {"RUB": "RUB (₽)", "USD": "USD ($)"}
+        text = localize(
+            "settings.lang_curr.title",
+            lang_name=lang_names.get(locale, locale),
+            curr_name=curr_names.get(cur_curr, cur_curr),
+        )
         await edit_screen(
             call,
-            _main_text(call.from_user),
-            reply_markup=markup,
-            screen="main-menu",
+            text,
+            reply_markup=language_and_currency_keyboard(locale, cur_curr),
+            screen="language",
         )
         await call.answer(localize("language.changed"))
     finally:
         reset_locale(token)
-    await state.clear()
+
+
+@router.callback_query(F.data.startswith("set-currency:"))
+async def set_currency_callback_handler(call: CallbackQuery, state: FSMContext):
+    currency = call.data.split(":", 1)[1].upper()
+    await ensure_user(call.from_user.id)
+    if not await set_user_currency(call.from_user.id, currency):
+        await call.answer(localize("errors.invalid_data"), show_alert=True)
+        return
+
+    token = set_user_currency_context(currency)
+    try:
+        user_row = await check_user(call.from_user.id)
+        cur_lang = (user_row.get("locale") if user_row else None) or get_locale()
+        lang_names = {"ru": "Русский 🇷🇺", "en": "English 🇬🇧", "vi": "Tiếng Việt 🇻🇳"}
+        curr_names = {"RUB": "RUB (₽)", "USD": "USD ($)"}
+        text = localize(
+            "settings.lang_curr.title",
+            lang_name=lang_names.get(cur_lang, cur_lang),
+            curr_name=curr_names.get(currency, currency),
+        )
+        await edit_screen(
+            call,
+            text,
+            reply_markup=language_and_currency_keyboard(cur_lang, currency),
+            screen="language",
+        )
+        await call.answer(localize("currency.changed", currency=currency))
+    finally:
+        reset_user_currency_context(token)
 
 
 @router.callback_query(F.data == "profile")
@@ -481,13 +622,23 @@ async def profile_callback_handler(call: CallbackQuery, state: FSMContext):
     )
     referral = EnvKeys.REFERRAL_PERCENT
 
+    curr = get_user_currency()
+    if curr == "USD":
+        balance_disp = f"${rub_to_usd(balance):.2f}"
+        spent_disp = f"${rub_to_usd(spent_total):.2f}"
+        curr_disp = "USD"
+    else:
+        balance_disp = str(balance)
+        spent_disp = str(spent_total)
+        curr_disp = EnvKeys.PAY_CURRENCY
+
     markup = profile_keyboard(referral, items, cart_count=cart_count)
     text = (
         f"{localize('profile.caption')}\n"
         f"{localize('profile.id', id=user_id)}\n"
         f"{localize('profile.login', login='@' + _esc(tg_user.username) if tg_user.username else '—')}\n\n"
-        f"{localize('profile.balance', amount=balance, currency=EnvKeys.PAY_CURRENCY)}\n"
-        f"{localize('profile.spent', amount=spent_total, currency=EnvKeys.PAY_CURRENCY)}\n"
+        f"{localize('profile.balance', amount=balance_disp, currency=curr_disp)}\n"
+        f"{localize('profile.spent', amount=spent_disp, currency=curr_disp)}\n"
         f"{localize('profile.purchased_count', count=items)}\n\n"
         f"{localize('profile.referrals_count', count=referrals_count)}\n"
         f"{localize('profile.registration_date', dt=format_moscow_date(user_info['registration_date']))}"

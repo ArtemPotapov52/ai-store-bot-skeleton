@@ -36,6 +36,7 @@ from bot.keyboards.styles import colorize_markup
 from aiogram.types import InlineKeyboardButton
 from bot.i18n import localize, esc, format_dt
 from bot.misc import EnvKeys, LazyPaginator, ReviewRequest
+from bot.misc.currency import get_user_currency, rub_to_usd
 from bot.catalog_labels import (
     category_button_text,
     category_custom_emoji_id,
@@ -168,7 +169,12 @@ async def _render_item_page(target, state: FSMContext, item_name: str, back_data
     )
 
     price, _on_sale, _original_price = effective_price(item_info_data)
-    price_line = localize("shop.item.price", amount=price, currency=EnvKeys.PAY_CURRENCY)
+    curr = get_user_currency()
+    if curr == "USD":
+        price_val = f"${rub_to_usd(price):.2f}"
+        price_line = localize("shop.item.price", amount=price_val, currency="USD")
+    else:
+        price_line = localize("shop.item.price", amount=price, currency=EnvKeys.PAY_CURRENCY)
 
     markup = item_info(
         back_data,
@@ -375,12 +381,22 @@ async def _show_goods_page(call: CallbackQuery, state: FSMContext,
     items_index = {item: i for i, item in enumerate(page_items)}
     summaries = await get_catalog_items_summary(page_items)
 
+    curr = get_user_currency()
+
     def _button_text(item_name: str) -> str:
         item = summaries.get(item_name, {"name": item_name, "price": "—", "quantity": 0})
+        raw_price = item.get("price")
+        if curr == "USD" and raw_price not in ("—", None):
+            price_disp = f"${rub_to_usd(raw_price):.2f}"
+            curr_disp = "USD"
+        else:
+            price_disp = str(raw_price if raw_price is not None else "—")
+            curr_disp = EnvKeys.PAY_CURRENCY
+
         common = {
             "name": item_name,
-            "price": item.get("price", "—"),
-            "currency": EnvKeys.PAY_CURRENCY,
+            "price": price_disp,
+            "currency": curr_disp,
         }
         if item.get("is_infinite"):
             label = localize("shop.goods.button.unlimited", **common)

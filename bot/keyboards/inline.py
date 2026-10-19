@@ -130,15 +130,48 @@ def legal_keyboard(back_callback: str) -> InlineKeyboardMarkup:
     return colorize_markup(kb.as_markup(), uniform="success")
 
 
-def language_keyboard() -> InlineKeyboardMarkup:
+def onboarding_language_keyboard() -> InlineKeyboardMarkup:
+    """Language selection buttons for the first-start onboarding screen."""
     return simple_buttons(
         [
-            ("🇷🇺 Русский", "set-language:ru"),
-            ("🇬🇧 English", "set-language:en"),
-            ("🇻🇳 Tiếng Việt", "set-language:vi"),
-            (localize("btn.main_menu"), "back_to_menu"),
-        ]
+            ("🇷🇺 Русский", "onboarding:lang:ru"),
+            ("🇬🇧 English", "onboarding:lang:en"),
+            ("🇻🇳 Tiếng Việt", "onboarding:lang:vi"),
+        ],
+        per_row=1,
     )
+
+
+def onboarding_currency_keyboard() -> InlineKeyboardMarkup:
+    """Currency selection buttons for the first-start onboarding screen."""
+    return simple_buttons(
+        [
+            ("🇺🇸 USD ($)", "onboarding:curr:USD"),
+            ("🇷🇺 RUB (₽)", "onboarding:curr:RUB"),
+        ],
+        per_row=1,
+    )
+
+
+def language_and_currency_keyboard(current_lang: str = "ru", current_curr: str = "RUB") -> InlineKeyboardMarkup:
+    """Unified language & currency settings menu with active checkmarks."""
+    lang_norm = (current_lang or "ru").lower()
+    curr_norm = (current_curr or "RUB").upper()
+    return simple_buttons(
+        [
+            (f"{'✅ ' if lang_norm == 'ru' else ''}🇷🇺 Русский", "set-language:ru"),
+            (f"{'✅ ' if lang_norm == 'en' else ''}🇬🇧 English", "set-language:en"),
+            (f"{'✅ ' if lang_norm == 'vi' else ''}🇻🇳 Tiếng Việt", "set-language:vi"),
+            (f"{'✅ ' if curr_norm == 'USD' else ''}🇺🇸 USD ($)", "set-currency:USD"),
+            (f"{'✅ ' if curr_norm == 'RUB' else ''}🇷🇺 RUB (₽)", "set-currency:RUB"),
+            (localize("btn.main_menu"), "back_to_menu"),
+        ],
+        per_row=1,
+    )
+
+
+def language_keyboard() -> InlineKeyboardMarkup:
+    return language_and_currency_keyboard()
 
 
 def admin_console_keyboard(maintenance_mode: bool = False, role: int = 127) -> InlineKeyboardMarkup:

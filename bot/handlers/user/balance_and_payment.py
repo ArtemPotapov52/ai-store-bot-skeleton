@@ -52,6 +52,7 @@ from bot.database.methods.pricing import (
 from bot.misc.screens import answer_screen, edit_screen
 from bot.filters import ValidAmountFilter
 from bot.i18n import localize, esc, format_dt
+from bot.misc.currency import get_user_currency, rub_to_usd, usd_to_rub
 from bot.states import BalanceStates, ShopStates
 
 router = Router()
@@ -238,17 +239,31 @@ async def _render_purchase_choice(
     )
     await state.set_state(ShopStates.confirming_purchase)
 
+    curr = get_user_currency()
+    if curr == "USD":
+        unit_price_disp = f"${rub_to_usd(quote['unit_price']):.2f}"
+        total_price_disp = f"${rub_to_usd(quote['total_price']):.2f}"
+        balance_disp = f"${rub_to_usd(quote['balance']):.2f}"
+        missing_disp = f"${rub_to_usd(max(quote['total_price'] - quote['balance'], Decimal('0.00'))):.2f}"
+        curr_disp = "USD"
+    else:
+        unit_price_disp = str(quote["unit_price"])
+        total_price_disp = str(quote["total_price"])
+        balance_disp = str(quote["balance"])
+        missing_disp = str(max(quote["total_price"] - quote["balance"], Decimal("0.00")))
+        curr_disp = EnvKeys.PAY_CURRENCY
+
     text = localize(
         "shop.purchase.choose_quantity" if quote["can_afford"] else "shop.purchase.insufficient",
         item_name=esc(item_name),
         quantity=quantity,
         min_quantity=min_quantity,
         max_quantity=max_quantity,
-        unit_price=quote["unit_price"],
-        total_price=quote["total_price"],
-        balance=quote["balance"],
-        missing=max(quote["total_price"] - quote["balance"], Decimal("0.00")),
-        currency=EnvKeys.PAY_CURRENCY,
+        unit_price=unit_price_disp,
+        total_price=total_price_disp,
+        balance=balance_disp,
+        missing=missing_disp,
+        currency=curr_disp,
     )
     category_name = None
     category_id = item.get("category_id")
@@ -337,9 +352,11 @@ async def replenish_balance_callback_handler(call: CallbackQuery, state: FSMCont
         await call.answer(localize("payments.not_configured"), show_alert=True)
         return
 
+    curr = get_user_currency()
+    curr_label = "USD ($)" if curr == "USD" else EnvKeys.PAY_CURRENCY
     await edit_screen(
         call,
-        localize("payments.replenish_prompt", currency=EnvKeys.PAY_CURRENCY),
+        localize("payments.replenish_prompt", currency=curr_label),
         reply_markup=_balance_prompt_keyboard(),
         screen="balance",
     )
@@ -349,16 +366,27 @@ async def replenish_balance_callback_handler(call: CallbackQuery, state: FSMCont
 @router.message(BalanceStates.waiting_amount, ValidAmountFilter())
 async def replenish_balance_amount(message: Message, state: FSMContext):
     """Store amount and show payment methods."""
+    curr = get_user_currency()
     try:
-        # Validate amount using Pydantic
-        amount = validate_money_amount(
-            message.text,
-            min_amount=Decimal(EnvKeys.MIN_AMOUNT),
-            max_amount=Decimal(EnvKeys.MAX_AMOUNT)
-        )
+        if curr == "USD":
+            raw_val = Decimal(message.text.strip())
+            if raw_val < Decimal("1") or raw_val > Decimal("1000"):
+                raise ValueError("USD amount out of range")
+            amount_rub = usd_to_rub(raw_val)
+            amount_val = int(amount_rub)
+            amount_usd = float(raw_val)
+        else:
+            amount_val = int(validate_money_amount(
+                message.text,
+                min_amount=Decimal(EnvKeys.MIN_AMOUNT),
+                max_amount=Decimal(EnvKeys.MAX_AMOUNT)
+            ))
+            amount_usd = float(rub_to_usd(amount_val))
 
         await state.update_data(
-            amount=int(amount),
+            amount=amount_val,
+            amount_usd=amount_usd,
+            user_currency=curr,
             test_payment_id=secrets.token_urlsafe(24),
         )
 
@@ -371,12 +399,15 @@ async def replenish_balance_amount(message: Message, state: FSMContext):
         await state.set_state(BalanceStates.waiting_payment)
 
     except ValueError:
+        curr_label = "USD ($)" if curr == "USD" else EnvKeys.PAY_CURRENCY
+        min_amt = "1" if curr == "USD" else EnvKeys.MIN_AMOUNT
+        max_amt = "1000" if curr == "USD" else EnvKeys.MAX_AMOUNT
         await answer_screen(
             message,
             localize("payments.replenish_invalid",
-                     min_amount=EnvKeys.MIN_AMOUNT,
-                     max_amount=EnvKeys.MAX_AMOUNT,
-                     currency=EnvKeys.PAY_CURRENCY),
+                     min_amount=min_amt,
+                     max_amount=max_amt,
+                     currency=curr_label),
             reply_markup=simple_buttons([
                 (localize("btn.back"), "replenish_balance"),
                 (localize("btn.main_menu"), "back_to_menu"),
@@ -390,12 +421,16 @@ async def invalid_amount(message: Message, state: FSMContext):
     """
     Tell user the amount is invalid.
     """
+    curr = get_user_currency()
+    curr_label = "USD ($)" if curr == "USD" else EnvKeys.PAY_CURRENCY
+    min_amt = "1" if curr == "USD" else EnvKeys.MIN_AMOUNT
+    max_amt = "1000" if curr == "USD" else EnvKeys.MAX_AMOUNT
     await answer_screen(
         message,
         localize("payments.replenish_invalid",
-                 min_amount=EnvKeys.MIN_AMOUNT,
-                 max_amount=EnvKeys.MAX_AMOUNT,
-                 currency=EnvKeys.PAY_CURRENCY),
+                 min_amount=min_amt,
+                 max_amount=max_amt,
+                 currency=curr_label),
         reply_markup=simple_buttons([
             (localize("btn.back"), "replenish_balance"),
             (localize("btn.main_menu"), "back_to_menu"),
@@ -703,7 +738,7 @@ async def process_replenish_balance(call: CallbackQuery, state: FSMContext):
                     amount=amount_dec,
                     expires_in=ttl_seconds,
                     currency=payment_request.currency,
-                    description=f"My Store: +{int(amount_dec)} {payment_request.currency}",
+                    description=f"Wenty_shop: +{int(amount_dec)} {payment_request.currency}",
                     client_invoice_id=intent_id,
                     telegram_id=call.from_user.id,
                 )

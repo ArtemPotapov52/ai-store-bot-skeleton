@@ -67,6 +67,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "support.prefilled": "Привет! Я из {shop_name}, у меня такая проблема: ",
         "language.title": "🌐 Выберите язык / Choose your language",
         "language.changed": "✅ Язык изменён",
+        "currency.changed": "✅ Валюта изменена на {currency}",
+        "onboarding.lang.title": "👋 <b>Добро пожаловать!</b>\nПожалуйста, выберите язык:\n\n👋 <b>Welcome!</b>\nPlease choose your language:",
+        "onboarding.curr.title": "💱 <b>Выберите валюту отображения:</b>\n\nВсе цены в каталоге и баланс будут пересчитаны по курсу: <b>1 USD = 90 RUB</b>.",
+        "onboarding.done": "✅ Настройка завершена! Добро пожаловать.",
+        "settings.lang_curr.title": (
+            "⚙️ <b>Настройки языка и валюты</b>\n\n"
+            "🌐 Текущий язык: <b>{lang_name}</b>\n"
+            "💱 Текущая валюта: <b>{curr_name}</b> (Курс: 1 USD = 90 RUB)\n\n"
+            "Нажмите на кнопку ниже, чтобы изменить:"
+        ),
 
         # === Subscription Flow ===
         "subscribe.prompt": "Для начала подпишитесь на новостной канал",
@@ -783,6 +793,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "support.prefilled": "Hello! I'm from {shop_name}, I have the following problem: ",
         "language.title": "🌐 Choose your language / Выберите язык",
         "language.changed": "✅ Language changed",
+        "currency.changed": "✅ Currency changed to {currency}",
+        "onboarding.lang.title": "👋 <b>Welcome!</b>\nPlease choose your language:\n\n👋 <b>Добро пожаловать!</b>\nПожалуйста, выберите язык:",
+        "onboarding.curr.title": "💱 <b>Choose your display currency:</b>\n\nAll catalog prices and balance will be calculated using the rate: <b>1 USD = 90 RUB</b>.",
+        "onboarding.done": "✅ Setup complete! Welcome.",
+        "settings.lang_curr.title": (
+            "⚙️ <b>Language & Currency Settings</b>\n\n"
+            "🌐 Current language: <b>{lang_name}</b>\n"
+            "💱 Current currency: <b>{curr_name}</b> (Rate: 1 USD = 90 RUB)\n\n"
+            "Click a button below to change:"
+        ),
 
         # === Profile ===
         "btn.replenish": "Top up your balance",
@@ -1495,6 +1515,16 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "support.prefilled": "Xin chào! Tôi nhắn từ {shop_name}, tôi gặp vấn đề sau: ",
         "language.title": "🌐 Chọn ngôn ngữ / Choose your language",
         "language.changed": "✅ Đã đổi ngôn ngữ",
+        "currency.changed": "✅ Đã đổi tiền tệ sang {currency}",
+        "onboarding.lang.title": "👋 <b>Chào mừng bạn!</b>\nVui lòng chọn ngôn ngữ của bạn:\n\n👋 <b>Welcome!</b>\nPlease choose your language:",
+        "onboarding.curr.title": "💱 <b>Chọn đơn vị tiền tệ:</b>\n\nTất cả giá trong danh mục và số dư sẽ được tính theo tỷ giá: <b>1 USD = 90 RUB</b>.",
+        "onboarding.done": "✅ Cài đặt hoàn tất! Chào mừng bạn.",
+        "settings.lang_curr.title": (
+            "⚙️ <b>Cài đặt ngôn ngữ và tiền tệ</b>\n\n"
+            "🌐 Ngôn ngữ hiện tại: <b>{lang_name}</b>\n"
+            "💱 Tiền tệ hiện tại: <b>{curr_name}</b> (Tỷ giá: 1 USD = 90 RUB)\n\n"
+            "Nhấp vào nút bên dưới để thay đổi:"
+        ),
 
         # === Subscription Flow ===
         "subscribe.prompt": "Để bắt đầu, hãy đăng ký kênh tin tức",
