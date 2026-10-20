@@ -7,6 +7,9 @@ import asyncio
 import sys
 from datetime import datetime, timezone
 
+from dotenv import load_dotenv
+load_dotenv(encoding='utf-8')
+
 from bot.database.main import Database
 from bot.database.methods.create import create_user
 from bot.database.methods.read import check_user, get_default_user_role_id
