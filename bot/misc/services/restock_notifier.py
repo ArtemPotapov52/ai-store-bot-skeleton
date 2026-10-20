@@ -63,7 +63,7 @@ async def notify_restock(
     reply_markup = None
     if purchase_link:
         reply_markup = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="➡️ Перейти к товару", url=purchase_link),
+            InlineKeyboardButton(text="🛒 Купить", url=purchase_link),
         ]])
 
     try:

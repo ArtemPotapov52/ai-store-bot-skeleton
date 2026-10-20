@@ -51,13 +51,35 @@ async def product_purchase_link(bot: Bot, item_id: int | None) -> str | None:
     return f"https://t.me/{username}?start=item_{item_id}"
 
 
+def get_announcement_chat_ids() -> list[int | str]:
+    """Get all configured target chats and channels (COMMUNITY_CHAT_ID and CHANNEL_ID)."""
+    targets: list[int | str] = []
+    for raw in (
+        getattr(EnvKeys, "COMMUNITY_CHAT_ID", None),
+        getattr(EnvKeys, "CHANNEL_ID", None),
+    ):
+        if not raw:
+            continue
+        val = str(raw).strip()
+        if not val:
+            continue
+        try:
+            num = int(val)
+            if num not in targets:
+                targets.append(num)
+        except (ValueError, TypeError):
+            if val not in targets:
+                targets.append(val)
+    return targets
+
+
 def _channel_chat_id() -> int | None:
     """Numeric channel id for shop posts, or None when not configured."""
-    raw = str(getattr(EnvKeys, "CHANNEL_ID", "") or "").strip()
-    try:
-        return int(raw)
-    except (TypeError, ValueError):
-        return None
+    targets = get_announcement_chat_ids()
+    for t in targets:
+        if isinstance(t, int):
+            return t
+    return None
 
 
 def catalog_currency_label() -> str:
@@ -90,18 +112,18 @@ async def announce_catalog_arrival(
     count: int,
     item_id: int | None,
     is_infinity: bool = False,
+    chat_id: int | str | None = None,
 ) -> bool:
-    """Post an operator-requested restock announcement to the shop channel.
+    """Post an operator-requested restock announcement to the chat and/or channel.
 
-    This is the "notify" checkbox in the stock web form: one channel post with
-    a "К товару" deep-link button that opens the product card in the bot.
-    (``notify_restock`` separately pings users who follow one product.)
+    Posts with a prominent '🛒 Купить' deep-link button that opens the product card directly in the bot.
     """
     if bot is None:
         return False
-    chat_id = _channel_chat_id()
-    if chat_id is None:
-        logger.warning("Restock post skipped: CHANNEL_ID is not configured")
+
+    targets = [chat_id] if chat_id is not None else get_announcement_chat_ids()
+    if not targets:
+        logger.warning("Restock announcement skipped: neither COMMUNITY_CHAT_ID nor CHANNEL_ID is configured")
         return False
 
     safe_name = html_escape(str(item_name), quote=False)
@@ -113,50 +135,57 @@ async def announce_catalog_arrival(
         added = "0"
     added_units = "" if available == "∞" else " шт."
     text = (
-        "📦 <b>Пополнение:</b> "
-        f"{safe_name}\n"
-        f"➕ Завезли: {added}{added_units} | 📦 На складе: {available}{units}\n"
-        f"💰 Цена: {format_catalog_price(price)} {catalog_currency_label()}"
+        "📦 <b>Пополнение товара!</b>\n\n"
+        f"🏷 <b>Товар:</b> {safe_name}\n"
+        f"➕ <b>Завезли:</b> {added}{added_units}\n"
+        f"📦 <b>На складе:</b> {available}{units}\n"
+        f"💰 <b>Цена:</b> {format_catalog_price(price)} {catalog_currency_label()}"
     )
-    markup = None
+
     purchase_link = await product_purchase_link(bot, item_id)
+    if not purchase_link:
+        try:
+            from bot.database.methods.read import get_item_info_cached
+            info = await get_item_info_cached(str(item_name))
+            if info and info.get("id"):
+                purchase_link = await product_purchase_link(bot, int(info["id"]))
+        except Exception:
+            pass
+
+    markup = None
     if purchase_link:
-        # URL-buttons are the ones Telegram clients render blue.
         markup = InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(text="➡️ Перейти к товару", url=purchase_link),
+            InlineKeyboardButton(text="🛒 Купить", url=purchase_link),
         ]])
 
     import asyncio as _asyncio
 
-    last_error: str | None = None
-    for attempt in (1, 2, 3):
-        try:
-            await bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                parse_mode="HTML",
-                reply_markup=markup,
-                disable_notification=False,
-                link_preview_options=_NO_PREVIEW,
-            )
-            break
-        except (TelegramForbiddenError, TelegramNotFound, TelegramBadRequest) as exc:
-            # Permanent: no point retrying (no rights, chat gone, bad request).
-            logger.warning("Restock channel post was not delivered: %s", exc)
-            return False
-        except Exception as exc:
-            # Transient (network blips): retry, then give up loudly.
-            last_error = str(exc)
-            logger.warning(
-                "Restock channel post attempt %s/3 failed, retrying: %s", attempt, exc
-            )
-            await _asyncio.sleep(5 * attempt)
-    else:
-        logger.error("Restock channel post failed after 3 attempts: %s", last_error)
-        return False
+    delivered_any = False
+    for target in targets:
+        for attempt in (1, 2, 3):
+            try:
+                await bot.send_message(
+                    chat_id=target,
+                    text=text,
+                    parse_mode="HTML",
+                    reply_markup=markup,
+                    disable_notification=False,
+                    link_preview_options=_NO_PREVIEW,
+                )
+                delivered_any = True
+                break
+            except (TelegramForbiddenError, TelegramNotFound, TelegramBadRequest) as exc:
+                logger.warning("Restock announcement to %s was not delivered: %s", target, exc)
+                break
+            except Exception as exc:
+                logger.warning(
+                    "Restock announcement attempt %s/3 to %s failed, retrying: %s", attempt, target, exc
+                )
+                await _asyncio.sleep(3 * attempt)
 
-    logger.info("restock channel post sent: item=%r price=%s", item_name, format_catalog_price(price))
-    return True
+    if delivered_any:
+        logger.info("Restock announcement delivered: item=%r price=%s", item_name, format_catalog_price(price))
+    return delivered_any
 
 
 async def notify_owner_stock_added(

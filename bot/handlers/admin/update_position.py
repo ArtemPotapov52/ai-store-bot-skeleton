@@ -207,27 +207,22 @@ async def updating_item_amount(call: CallbackQuery, state):
 
     if added:
         await _notify_restock_safe(call.bot, item_name, added_count=added)
-
-    # Optional: channel notification (if configured)
-    channel_username = _parse_channel_username()
-    if channel_username:
+        from bot.misc.services.catalog_notifications import announce_catalog_arrival
+        from bot.database.methods.read import get_item_info_cached
         try:
-            chat_id = int(EnvKeys.CHANNEL_ID) if EnvKeys.CHANNEL_ID else f"@{channel_username}"
-            await call.bot.send_message(
-                chat_id=chat_id,
-                text=(
-                    f'🎁 {localize("shop.group.new_upload")}\n'
-                    f'🏷️ {localize("shop.group.item")}: <b>{esc(item_name)}</b>\n'
-                    f'📦 {localize("shop.group.count")}: <b>{added}</b>'
-                ),
-                parse_mode='HTML'
-            )
-        except TelegramForbiddenError:
-            await call.answer(localize("errors.channel.telegram_forbidden_error", channel=channel_username))
-        except TelegramNotFound:
-            await call.answer(localize("errors.channel.telegram_not_found", channel=channel_username))
-        except TelegramBadRequest as e:
-            await call.answer(localize("errors.channel.telegram_bad_request", e=e))
+            item = await get_item_info_cached(item_name)
+            price = item.get("price") if item else None
+            item_id = item.get("id") if item else None
+            safe_create_task(announce_catalog_arrival(
+                call.bot,
+                item_name=item_name,
+                price=price,
+                count=added,
+                item_id=item_id,
+                is_infinity=False,
+            ))
+        except Exception:
+            logger.debug("Announce catalog arrival in update_position failed", exc_info=True)
 
     admin_name = caller_name(call)
     await log_audit("add_item_values", user_id=call.from_user.id, resource_type="Item", resource_id=item_name,
@@ -396,6 +391,22 @@ async def update_item_infinity(message: Message, state):
     await message.answer(localize('admin.goods.update.success'), reply_markup=back('goods_management'))
 
     await _notify_restock_safe(message.bot, item_new_name, added_count=_added or 1)
+    from bot.misc.services.catalog_notifications import announce_catalog_arrival
+    from bot.database.methods.read import get_item_info_cached
+    try:
+        item = await get_item_info_cached(item_new_name)
+        price = item.get("price") if item else None
+        item_id = item.get("id") if item else None
+        safe_create_task(announce_catalog_arrival(
+            message.bot,
+            item_name=item_new_name,
+            price=price,
+            count=1,
+            item_id=item_id,
+            is_infinity=True,
+        ))
+    except Exception:
+        logger.debug("Announce infinity arrival failed", exc_info=True)
 
     admin_name = caller_name(message)
     await log_audit("update_item", user_id=message.from_user.id, resource_type="Item", resource_id=item_new_name,
@@ -464,27 +475,22 @@ async def update_item_no_infinity(call: CallbackQuery, state):
 
     if added:
         await _notify_restock_safe(call.bot, item_new_name, added_count=added)
-
-    # Optional: channel notification (if configured)
-    channel_username = _parse_channel_username()
-    if channel_username:
+        from bot.misc.services.catalog_notifications import announce_catalog_arrival
+        from bot.database.methods.read import get_item_info_cached
         try:
-            chat_id = int(EnvKeys.CHANNEL_ID) if EnvKeys.CHANNEL_ID else f"@{channel_username}"
-            await call.bot.send_message(
-                chat_id=chat_id,
-                text=(
-                    f'🎁 {localize("shop.group.new_upload")}\n'
-                    f'🏷️ {localize("shop.group.item")}: <b>{esc(item_new_name)}</b>\n'
-                    f'📦 {localize("shop.group.count")}: <b>{added}</b>'
-                ),
-                parse_mode='HTML'
-            )
-        except TelegramForbiddenError:
-            await call.answer(localize("errors.channel.telegram_forbidden_error", channel=channel_username))
-        except TelegramNotFound:
-            await call.answer(localize("errors.channel.telegram_not_found", channel=channel_username))
-        except TelegramBadRequest as e:
-            await call.answer(localize("errors.channel.telegram_bad_request", e=e))
+            item = await get_item_info_cached(item_new_name)
+            price = item.get("price") if item else None
+            item_id = item.get("id") if item else None
+            safe_create_task(announce_catalog_arrival(
+                call.bot,
+                item_name=item_new_name,
+                price=price,
+                count=added,
+                item_id=item_id,
+                is_infinity=False,
+            ))
+        except Exception:
+            logger.debug("Announce arrival in update_item_no_infinity failed", exc_info=True)
 
     await call.message.edit_text("\n".join(text_lines), parse_mode="HTML", reply_markup=back('goods_management'))
     admin_name = caller_name(call)

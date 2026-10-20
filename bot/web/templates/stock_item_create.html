@@ -11,8 +11,8 @@
   </ul>
   <p class="mb-0">Переключатель «Выдавать без ограничения» оставляйте выключенным для аккаунтов и ключей. Он нужен для одного текста или ссылки, которые можно отправлять каждому покупателю.</p>
 </div>
-<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="announce_arrival" id="announce_arrival" value="1"><label class="form-check-label" for="announce_arrival"><b>📢 Опубликовать пост о поступлении в канал</b><br><span class="text-muted">В канал придёт пост «Пополнение» с остатком, ценой и кнопкой «Перейти к товару».</span></label></div>
-<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="notify_all" id="notify_all" value="1"><label class="form-check-label" for="notify_all"><b>🔔 Уведомить всех пользователей</b><br><span class="text-muted">Если включено, сообщение о поступлении получат все зарегистрированные пользователи. Если выключено — только те, кто нажал «Уведомить о поступлении» у этого товара.</span></label></div>
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="announce_arrival" id="announce_arrival" value="1" checked><label class="form-check-label" for="announce_arrival"><b>📢 Сделать рассылку в чат / канал</b><br><span class="text-muted">В привязанный чат сообщества и канал от имени бота придёт уведомление о пополнении с кнопкой «🛒 Купить».</span></label></div>
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="notify_all" id="notify_all" value="1"><label class="form-check-label" for="notify_all"><b>🔔 Напомнить о товаре (уведомить подписчиков в ЛС)</b><br><span class="text-muted">Если выключено — сообщение получат только те, кто нажал «Напомнить о наличии». Если включено — рассылка всем пользователям бота.</span></label></div>
 {% endblock %}
 
 {% block create_form %}
