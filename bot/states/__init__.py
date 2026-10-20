@@ -8,3 +8,4 @@ from .role_state import RoleMgmtFSM
 from .promo_state import PromoFSM
 from .review_state import ReviewFSM
 from .admin_state import BotAdminFSM
+from .traffic_state import TrafficFSM

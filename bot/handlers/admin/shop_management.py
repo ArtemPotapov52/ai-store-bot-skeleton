@@ -65,6 +65,7 @@ async def shop_callback_handler(call: CallbackQuery):
     if role & Permission.STATS_VIEW:
         actions.append((localize("admin.shop.menu.statistics"), "statistics"))
         actions.append((localize("admin.shop.menu.logs"), "show_logs"))
+        actions.append((localize("admin.menu.traffic"), "traffic_campaigns"))
     if role & Permission.USERS_MANAGE:
         actions.append((localize("admin.shop.menu.users"), "users_list"))
     if role & Permission.CATALOG_MANAGE:

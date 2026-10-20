@@ -135,6 +135,8 @@ class User(Database.BASE):
     locale: Mapped[str] = mapped_column(String(5), nullable=False, default="ru")
     currency: Mapped[str] = mapped_column(String(8), nullable=False, default="RUB", server_default="RUB")
     is_onboarded: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="true")
+    source_campaign_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey('traffic_campaigns.id', ondelete="SET NULL"), nullable=True, index=True)
     # Retained for compatibility with older deployments. The subscription
     # middleware now requires the community chat for every account.
     community_chat_required: Mapped[bool] = mapped_column(
@@ -828,6 +830,45 @@ class VpnSubscriptionLink(Database.BASE):
         return f"VPN subscription link for {self.user_id}"
 
 
+class TrafficCampaign(Database.BASE):
+    """Ad procurement / traffic campaign tracking link."""
+    __tablename__ = 'traffic_campaigns'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    tag: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    cost: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_by: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
+
+    clicks: Mapped[list["TrafficClick"]] = relationship(
+        "TrafficClick", back_populates="campaign", cascade="all, delete-orphan", lazy="raise"
+    )
+
+    def __str__(self):
+        return f"TrafficCampaign(id={self.id}, name={self.name}, tag={self.tag})"
+
+
+class TrafficClick(Database.BASE):
+    """Individual user click / visit via a traffic campaign link."""
+    __tablename__ = 'traffic_clicks'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey('traffic_campaigns.id', ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    is_new_user: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), index=True
+    )
+
+    campaign: Mapped["TrafficCampaign"] = relationship(
+        "TrafficCampaign", back_populates="clicks", lazy="raise"
+    )
+
+
 async def register_models():
     """Seed the built-in roles (USER/ADMIN/OWNER) and ensure user columns."""
     from sqlalchemy import text
@@ -840,6 +881,36 @@ async def register_models():
             await s.execute(
                 text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_onboarded BOOLEAN NOT NULL DEFAULT TRUE;")
             )
+            await s.execute(
+                text("ALTER TABLE users ADD COLUMN IF NOT EXISTS source_campaign_id INTEGER;")
+            )
+            await s.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS traffic_campaigns (
+                    id SERIAL PRIMARY KEY,
+                    name VARCHAR(128) NOT NULL,
+                    tag VARCHAR(64) UNIQUE NOT NULL,
+                    cost NUMERIC(12, 2) DEFAULT 0 NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    created_by BIGINT
+                );
+                CREATE INDEX IF NOT EXISTS ix_traffic_campaigns_tag ON traffic_campaigns (tag);
+                """)
+            )
+            await s.execute(
+                text("""
+                CREATE TABLE IF NOT EXISTS traffic_clicks (
+                    id SERIAL PRIMARY KEY,
+                    campaign_id INTEGER REFERENCES traffic_campaigns(id) ON DELETE CASCADE NOT NULL,
+                    user_id BIGINT NOT NULL,
+                    is_new_user BOOLEAN DEFAULT FALSE NOT NULL,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS ix_traffic_clicks_campaign_id ON traffic_clicks (campaign_id);
+                CREATE INDEX IF NOT EXISTS ix_traffic_clicks_created_at ON traffic_clicks (created_at);
+                CREATE INDEX IF NOT EXISTS ix_traffic_clicks_user_id ON traffic_clicks (user_id);
+                """)
+            )
     except Exception:
-        logger.debug("Automatic user column check skipped or failed", exc_info=True)
+        logger.debug("Automatic table check skipped or failed", exc_info=True)
     await Role.insert_roles()

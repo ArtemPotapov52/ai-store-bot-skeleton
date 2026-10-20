@@ -22,7 +22,13 @@ CART_MAX_ITEMS = 10
 CART_MAX_QTY_PER_ITEM = MAX_PURCHASE_QUANTITY
 
 
-async def create_user(telegram_id: int, registration_date: datetime, referral_id: int | None, role: int | None = None) -> None:
+async def create_user(
+    telegram_id: int,
+    registration_date: datetime,
+    referral_id: int | None,
+    role: int | None = None,
+    source_campaign_id: int | None = None,
+) -> None:
     """Create user if missing; commit.
 
     ``role`` must be a valid role id. When omitted, the current default role
@@ -48,6 +54,7 @@ async def create_user(telegram_id: int, registration_date: datetime, referral_id
                 referral_id=referral_id,
                 currency="RUB",
                 is_onboarded=False,
+                source_campaign_id=source_campaign_id,
             )
         )
         try:

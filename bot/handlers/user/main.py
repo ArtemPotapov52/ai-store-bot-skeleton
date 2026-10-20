@@ -261,6 +261,7 @@ async def start(message: Message, state: FSMContext):
         )
 
         referral_id = None
+        source_campaign_id = None
         if linked_item_id is None and payload:
             # int() comparison: "000123" must not pass as someone else's id,
             # let alone your own (self-referral stat inflation).
@@ -268,6 +269,15 @@ async def start(message: Message, state: FSMContext):
                 candidate = int(payload)
                 if await check_user(candidate) is not None:
                     referral_id = candidate
+            else:
+                try:
+                    from bot.database.methods.traffic import get_traffic_campaign_by_tag, record_traffic_click
+                    campaign = await get_traffic_campaign_by_tag(payload)
+                    if campaign:
+                        source_campaign_id = campaign["id"]
+                        await record_traffic_click(campaign["id"], user_id, is_new_user=True)
+                except Exception:
+                    logger.debug("Could not record traffic click for %s", payload, exc_info=True)
 
         # registration_date is DateTime
         if user_role is not None:
@@ -276,7 +286,8 @@ async def start(message: Message, state: FSMContext):
                     telegram_id=int(user_id),
                     registration_date=datetime.datetime.now(datetime.timezone.utc),
                     referral_id=referral_id,
-                    role=user_role
+                    role=user_role,
+                    source_campaign_id=source_campaign_id,
                 )
             except Exception:
                 logger.exception("start: could not register user %s", user_id)
@@ -291,6 +302,14 @@ async def start(message: Message, state: FSMContext):
         if metrics:
             metrics.track_event("registration", user_id)
     else:
+        if linked_item_id is None and payload and not payload.isdigit():
+            try:
+                from bot.database.methods.traffic import get_traffic_campaign_by_tag, record_traffic_click
+                campaign = await get_traffic_campaign_by_tag(payload)
+                if campaign:
+                    await record_traffic_click(campaign["id"], user_id, is_new_user=False)
+            except Exception:
+                logger.debug("Could not record returning traffic click for %s", payload, exc_info=True)
         await ensure_user(user_id)
 
     user_row = await check_user(user_id)

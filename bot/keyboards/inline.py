@@ -84,6 +84,8 @@ def main_menu(
         InlineKeyboardButton(text=localize("btn.rules"), callback_data="rules"),
         InlineKeyboardButton(text=localize("btn.faq"), callback_data="faq"),
     )
+    if Permission.has_any_admin_perm(role):
+        kb.row(InlineKeyboardButton(text=localize("btn.admin_menu"), callback_data="console"))
     # The news-channel button was removed on purpose: subscription is enforced
     # by the gate (subscribe screen links the channel), so the menu stays
     # focused on shopping. The `channel` argument is kept for compatibility.
@@ -198,6 +200,8 @@ def admin_console_keyboard(maintenance_mode: bool = False, role: int = 127) -> I
         kb.button(text=localize("admin.menu.user_search"), callback_data="user_search")
     if role & Permission.BALANCE_MANAGE:
         kb.button(text=localize("admin.menu.balance_topup"), callback_data="admin_replenish_balance")
+    if role & (Permission.STATS_VIEW | Permission.SETTINGS_MANAGE | Permission.OWN | Permission.USERS_MANAGE):
+        kb.button(text=localize("admin.menu.traffic"), callback_data="traffic_campaigns")
     kb.button(text=localize("btn.main_menu"), callback_data="back_to_menu")
     kb.adjust(1)
     return colorize_markup(kb.as_markup(), uniform="success")
