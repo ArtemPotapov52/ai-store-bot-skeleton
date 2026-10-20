@@ -11,8 +11,35 @@
   </ul>
   <p class="mb-0">Переключатель «Выдавать без ограничения» оставляйте выключенным для аккаунтов и ключей. Он нужен для одного текста или ссылки, которые можно отправлять каждому покупателю.</p>
 </div>
-<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="announce_arrival" id="announce_arrival" value="1" checked><label class="form-check-label" for="announce_arrival"><b>📢 Сделать рассылку в чат / канал</b><br><span class="text-muted">В привязанный чат сообщества и канал от имени бота придёт уведомление о пополнении с кнопкой «🛒 Купить».</span></label></div>
-<div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="notify_all" id="notify_all" value="1"><label class="form-check-label" for="notify_all"><b>🔔 Напомнить о товаре (уведомить подписчиков в ЛС)</b><br><span class="text-muted">Если выключено — сообщение получат только те, кто нажал «Напомнить о наличии». Если включено — рассылка всем пользователям бота.</span></label></div>
+<div class="row mb-3">
+  <div class="col-md-4 mb-2">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="announce_arrival" id="announce_arrival" value="1" checked>
+      <label class="form-check-label" for="announce_arrival">
+        <b>📢 Пост в канал</b><br>
+        <span class="text-muted small">Опубликовать пост о пополнении в канал с кнопкой «🛒 Купить»</span>
+      </label>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="announce_chat" id="announce_chat" value="1" checked>
+      <label class="form-check-label" for="announce_chat">
+        <b>💬 Рассылка в чат</b><br>
+        <span class="text-muted small">Отправить уведомление в чат сообщества с кнопкой «🛒 Купить»</span>
+      </label>
+    </div>
+  </div>
+  <div class="col-md-4 mb-2">
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="notify_all" id="notify_all" value="1">
+      <label class="form-check-label" for="notify_all">
+        <b>🔔 Напомнить о товаре</b><br>
+        <span class="text-muted small">Уведомить тех, кто нажал «Напомнить о наличии» (или всех пользователей)</span>
+      </label>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block create_form %}

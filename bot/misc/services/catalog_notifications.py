@@ -51,13 +51,17 @@ async def product_purchase_link(bot: Bot, item_id: int | None) -> str | None:
     return f"https://t.me/{username}?start=item_{item_id}"
 
 
-def get_announcement_chat_ids() -> list[int | str]:
-    """Get all configured target chats and channels (COMMUNITY_CHAT_ID and CHANNEL_ID)."""
+def get_announcement_chat_ids(target_type: str | None = None) -> list[int | str]:
+    """Get target chat/channel IDs based on target_type ('channel', 'chat', or None for both)."""
+    if target_type == "channel":
+        raw_list = [getattr(EnvKeys, "CHANNEL_ID", None)]
+    elif target_type == "chat":
+        raw_list = [getattr(EnvKeys, "COMMUNITY_CHAT_ID", None)]
+    else:
+        raw_list = [getattr(EnvKeys, "COMMUNITY_CHAT_ID", None), getattr(EnvKeys, "CHANNEL_ID", None)]
+
     targets: list[int | str] = []
-    for raw in (
-        getattr(EnvKeys, "COMMUNITY_CHAT_ID", None),
-        getattr(EnvKeys, "CHANNEL_ID", None),
-    ):
+    for raw in raw_list:
         if not raw:
             continue
         val = str(raw).strip()
@@ -75,7 +79,7 @@ def get_announcement_chat_ids() -> list[int | str]:
 
 def _channel_chat_id() -> int | None:
     """Numeric channel id for shop posts, or None when not configured."""
-    targets = get_announcement_chat_ids()
+    targets = get_announcement_chat_ids(target_type="channel")
     for t in targets:
         if isinstance(t, int):
             return t
@@ -113,6 +117,7 @@ async def announce_catalog_arrival(
     item_id: int | None,
     is_infinity: bool = False,
     chat_id: int | str | None = None,
+    target_type: str | None = None,
 ) -> bool:
     """Post an operator-requested restock announcement to the chat and/or channel.
 
@@ -121,7 +126,7 @@ async def announce_catalog_arrival(
     if bot is None:
         return False
 
-    targets = [chat_id] if chat_id is not None else get_announcement_chat_ids()
+    targets = [chat_id] if chat_id is not None else get_announcement_chat_ids(target_type=target_type)
     if not targets:
         logger.warning("Restock announcement skipped: neither COMMUNITY_CHAT_ID nor CHANNEL_ID is configured")
         return False

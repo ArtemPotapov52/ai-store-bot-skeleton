@@ -55,7 +55,7 @@
         <div class="mb-1">🏷️ <strong>{{ preview.name }}</strong></div>
         <div class="mb-1">📦 В наличии: <strong>{{ preview.quantity }}</strong></div>
         <div>💰 Цена: <strong>{{ preview.new_price }} {{ currency }}</strong></div>
-        <div class="text-primary mt-2">➡️ Перейти к товару</div>
+        <div class="text-primary mt-2">🛒 Купить</div>
       </div>
       {% if preview.price_changed %}
       <div class="alert alert-warning">При подтверждении цена товара в каталоге изменится с {{ preview.old_price }} на {{ preview.new_price }} {{ currency }}.</div>
@@ -65,7 +65,15 @@
       <form method="POST">
         <input type="hidden" name="action" value="send">
         <input type="hidden" name="confirmation" value="{{ preview.token }}">
-        <button class="btn btn-danger w-100" type="submit">Подтвердить и отправить всем пользователям</button>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="announce_channel" id="reminder_channel" value="1" checked>
+          <label class="form-check-label" for="reminder_channel"><b>📢 Опубликовать пост в канал</b></label>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" name="announce_chat" id="reminder_chat" value="1" checked>
+          <label class="form-check-label" for="reminder_chat"><b>💬 Отправить также в чат сообщества</b></label>
+        </div>
+        <button class="btn btn-danger w-100" type="submit">Подтвердить и отправить рассылку</button>
       </form>
     </div>
   </div>

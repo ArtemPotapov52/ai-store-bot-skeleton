@@ -436,6 +436,15 @@ async def _arrival_announcement_requested(request: Request) -> bool:
     return str(form.get("announce_arrival") or "").lower() in {"1", "true", "on", "yes"}
 
 
+async def _chat_announcement_requested(request: Request) -> bool:
+    """Read the chat announcement checkbox added to stock forms."""
+    try:
+        form = await request.form()
+    except Exception:
+        return False
+    return str(form.get("announce_chat") or "").lower() in {"1", "true", "on", "yes"}
+
+
 async def _notify_all_requested(request: Request) -> bool:
     """Read the stock-form switch that opts this arrival into a full broadcast."""
     try:
@@ -672,6 +681,7 @@ class StockBulkView(WebAccessMixin, BaseView):
         bulk_text = ""
         notify_all = False
         announce_arrival = False
+        announce_chat = False
 
         async with Database().session() as session:
             item_rows = (await session.execute(
@@ -691,6 +701,9 @@ class StockBulkView(WebAccessMixin, BaseView):
                 "1", "true", "on", "yes"
             }
             announce_arrival = str(form.get("announce_arrival") or "").lower() in {
+                "1", "true", "on", "yes"
+            }
+            announce_chat = str(form.get("announce_chat") or "").lower() in {
                 "1", "true", "on", "yes"
             }
 
@@ -746,6 +759,17 @@ class StockBulkView(WebAccessMixin, BaseView):
                                 count=added,
                                 item_id=item_id,
                                 is_infinity=False,
+                                target_type="channel",
+                            ))
+                        if announce_chat:
+                            safe_create_task(announce_catalog_arrival(
+                                _notifier_bot,
+                                item_name=item["name"],
+                                price=item["price"],
+                                count=added,
+                                item_id=item_id,
+                                is_infinity=False,
+                                target_type="chat",
                             ))
 
                 details = (
@@ -784,6 +808,7 @@ class StockBulkView(WebAccessMixin, BaseView):
                 "bulk_text": bulk_text,
                 "notify_all": notify_all,
                 "announce_arrival": announce_arrival,
+                "announce_chat": announce_chat,
                 "error": error,
                 "result": result,
             },
@@ -992,7 +1017,7 @@ class ProductReminderView(WebAccessMixin, BaseView):
                                     )
                                     markup = InlineKeyboardMarkup(inline_keyboard=[[
                                         InlineKeyboardButton(
-                                            text="➡️ Перейти к товару",
+                                            text="🛒 Купить",
                                             url=purchase_url,
                                         )
                                     ]])
@@ -1004,6 +1029,28 @@ class ProductReminderView(WebAccessMixin, BaseView):
                                         _client_ip(request),
                                         item["name"],
                                     ))
+                                    announce_channel = str(form.get("announce_channel") or "").lower() in {"1", "true", "on", "yes"}
+                                    announce_chat = str(form.get("announce_chat") or "").lower() in {"1", "true", "on", "yes"}
+                                    if announce_channel:
+                                        safe_create_task(announce_catalog_arrival(
+                                            _notifier_bot,
+                                            item_name=item["name"],
+                                            price=new_price,
+                                            count=item["quantity"],
+                                            item_id=item["id"],
+                                            is_infinity=item["is_infinite"],
+                                            target_type="channel",
+                                        ))
+                                    if announce_chat:
+                                        safe_create_task(announce_catalog_arrival(
+                                            _notifier_bot,
+                                            item_name=item["name"],
+                                            price=new_price,
+                                            count=item["quantity"],
+                                            item_id=item["id"],
+                                            is_infinity=item["is_infinite"],
+                                            target_type="chat",
+                                        ))
                                     broadcast_scheduled = True
                                     await log_audit(
                                         "product_reminder_started",
@@ -2858,6 +2905,9 @@ class ItemValuesAdmin(AuditModelView, model=ItemValues):
         request.state.catalog_arrival_announcement = bool(
             is_created and await _arrival_announcement_requested(request)
         )
+        request.state.catalog_chat_announcement = bool(
+            is_created and await _chat_announcement_requested(request)
+        )
         request.state.catalog_notify_all = bool(
             is_created and await _notify_all_requested(request)
         )
@@ -2918,6 +2968,17 @@ class ItemValuesAdmin(AuditModelView, model=ItemValues):
                         count=1,
                         item_id=item_id,
                         is_infinity=bool(getattr(model, "is_infinity", False)),
+                        target_type="channel",
+                    ))
+                if getattr(request.state, "catalog_chat_announcement", False) is True:
+                    safe_create_task(announce_catalog_arrival(
+                        _notifier_bot,
+                        item_name=item_name,
+                        price=price,
+                        count=1,
+                        item_id=item_id,
+                        is_infinity=bool(getattr(model, "is_infinity", False)),
+                        target_type="chat",
                     ))
 
     async def after_model_delete(self, model: Any, request: Request) -> None:
