@@ -126,13 +126,13 @@ async def list_traffic_campaigns() -> list[dict]:
 
         result = []
         for c in campaigns:
-            # Count total clicks and new users
+            # Count unique clicks and unique new users
             clicks_count = (await s.execute(
-                select(func.count(TrafficClick.id)).where(TrafficClick.campaign_id == c.id)
+                select(func.count(func.distinct(TrafficClick.user_id))).where(TrafficClick.campaign_id == c.id)
             )).scalar() or 0
 
             new_users_count = (await s.execute(
-                select(func.count(TrafficClick.id))
+                select(func.count(func.distinct(TrafficClick.user_id)))
                 .where(TrafficClick.campaign_id == c.id, TrafficClick.is_new_user.is_(True))
             )).scalar() or 0
 
@@ -173,20 +173,39 @@ async def delete_traffic_campaign(campaign_id: int) -> bool:
         return (res.rowcount or 0) > 0
 
 
-async def record_traffic_click(campaign_id: int, user_id: int, is_new_user: bool) -> None:
-    """Record an ad click / entry event."""
+async def record_traffic_click(campaign_id: int, user_id: int, is_new_user: bool = True) -> bool:
+    """Record an ad click / entry event only once per unique user.
+
+    Existing users who previously started the bot or already clicked this
+    campaign are excluded from click and new user metrics.
+    """
     async with Database().session() as s:
+        # 1. Do not count users who already have an account in the bot prior to this
+        if not is_new_user:
+            return False
+
+        # 2. Prevent duplicate clicks by the same user ID in this campaign
+        existing = (await s.execute(
+            select(TrafficClick.id).where(
+                TrafficClick.campaign_id == campaign_id,
+                TrafficClick.user_id == user_id,
+            )
+        )).scalar()
+        if existing:
+            return False
+
         click = TrafficClick(
             campaign_id=campaign_id,
             user_id=user_id,
-            is_new_user=is_new_user,
+            is_new_user=True,
             created_at=datetime.datetime.now(datetime.timezone.utc),
         )
         s.add(click)
+        return True
 
 
 async def get_campaign_hourly_stats(campaign_id: int, hours: int = 24) -> dict:
-    """Aggregate clicks by hour for the past N hours (default 24h)."""
+    """Aggregate unique clicks by hour for the past N hours (default 24h)."""
     now = datetime.datetime.now(datetime.timezone.utc)
     since = now - datetime.timedelta(hours=hours)
 
@@ -209,7 +228,11 @@ async def get_campaign_hourly_stats(campaign_id: int, hours: int = 24) -> dict:
 
         total_clicks = 0
         total_new_users = 0
+        seen_users = set()
         for c in clicks:
+            if c.user_id in seen_users:
+                continue
+            seen_users.add(c.user_id)
             msk_time = c.created_at.astimezone(MOSCOW_TZ)
             hour_key = msk_time.strftime("%H:00")
             if hour_key in slots:

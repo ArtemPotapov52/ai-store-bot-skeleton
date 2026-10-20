@@ -89,7 +89,7 @@ def _main_text(user) -> str:
         "menu.title",
         id=user.id,
         name=_esc(user.first_name or str(user.id)),
-        shop_name=_esc(_env_text("SHOP_NAME", "My Store")),
+        shop_name=_esc(_env_text("SHOP_NAME", "Wenty_shop")),
     )
 
 
@@ -302,14 +302,7 @@ async def start(message: Message, state: FSMContext):
         if metrics:
             metrics.track_event("registration", user_id)
     else:
-        if linked_item_id is None and payload and not payload.isdigit():
-            try:
-                from bot.database.methods.traffic import get_traffic_campaign_by_tag, record_traffic_click
-                campaign = await get_traffic_campaign_by_tag(payload)
-                if campaign:
-                    await record_traffic_click(campaign["id"], user_id, is_new_user=False)
-            except Exception:
-                logger.debug("Could not record returning traffic click for %s", payload, exc_info=True)
+        # Existing user who already used the bot before: do not count in ad campaigns
         await ensure_user(user_id)
 
     user_row = await check_user(user_id)
