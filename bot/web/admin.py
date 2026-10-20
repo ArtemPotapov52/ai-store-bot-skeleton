@@ -2324,6 +2324,126 @@ class ProcurementControlView(WebAccessMixin, BaseView):
         )
 
 
+class TrafficCampaignView(WebAccessMixin, BaseView):
+    """Ad procurement and traffic campaign link tracking with hourly diagram."""
+
+    identity = "traffic"
+    required_perm = Permission.STATS_VIEW
+    name = "Закупы (Реклама)"
+    icon = "fa-solid fa-bullhorn"
+
+    @expose("/traffic", methods=["GET", "POST"], identity="traffic")
+    async def traffic(self, request: Request):
+        from bot.database.methods.traffic import (
+            list_traffic_campaigns,
+            create_traffic_campaign,
+            delete_traffic_campaign,
+            get_traffic_campaign_by_id,
+            get_campaign_hourly_stats,
+        )
+        from bot.misc.timezone import format_moscow_datetime
+
+        error: str | None = None
+        result: str | None = None
+
+        bot_username = "pallasstorebot"
+        if _notifier_bot is not None:
+            try:
+                me = await _notifier_bot.get_me()
+                if me and me.username:
+                    bot_username = me.username
+            except Exception:
+                pass
+
+        if request.method == "POST":
+            form = await request.form()
+            action = str(form.get("action") or "").strip()
+            if action == "create":
+                name = str(form.get("name") or "").strip()
+                tag = str(form.get("tag") or "").strip() or None
+                if not name or len(name) > 120:
+                    error = "Название закупа должно быть от 1 до 120 символов."
+                else:
+                    try:
+                        created = await create_traffic_campaign(name, tag=tag)
+                        link = f"https://t.me/{bot_username}?start={created['tag']}"
+                        result = f"Закуп «{created['name']}» успешно создан! Ссылка: {link}"
+                        await log_audit(
+                            "traffic_campaign_create",
+                            resource_type="Закуп рекламы",
+                            resource_id=str(created["id"]),
+                            details=f"name={created['name']}, tag={created['tag']}",
+                            ip_address=_client_ip(request),
+                        )
+                    except Exception as exc:
+                        error = f"Ошибка создания: {exc}"
+            elif action == "delete":
+                try:
+                    cid = int(form.get("campaign_id") or 0)
+                    if cid:
+                        await delete_traffic_campaign(cid)
+                        result = "Закуп успешно удалён."
+                        await log_audit(
+                            "traffic_campaign_delete",
+                            resource_type="Закуп рекламы",
+                            resource_id=str(cid),
+                            ip_address=_client_ip(request),
+                        )
+                except Exception as exc:
+                    error = f"Ошибка удаления: {exc}"
+
+        raw_campaigns = await list_traffic_campaigns()
+        campaigns = []
+        for c in raw_campaigns:
+            dt_fmt = format_moscow_datetime(c["created_at"]) if c.get("created_at") else "—"
+            campaigns.append({
+                **c,
+                "link": f"https://t.me/{bot_username}?start={c['tag']}",
+                "created_at_fmt": dt_fmt,
+            })
+
+        selected_id_raw = request.query_params.get("campaign_id")
+        selected_campaign = None
+        selected_campaign_link = ""
+        selected_campaign_metrics = {"purchases": 0, "revenue": "0.00"}
+        hourly_stats = {"hourly_data": [], "total_clicks": 0, "new_users": 0}
+        hours = 24
+
+        if selected_id_raw and selected_id_raw.isdigit():
+            cid = int(selected_id_raw)
+            selected_campaign = await get_traffic_campaign_by_id(cid)
+            if selected_campaign:
+                hours_param = request.query_params.get("hours", "24")
+                try:
+                    hours = int(hours_param)
+                except ValueError:
+                    hours = 24
+                selected_campaign_link = f"https://t.me/{bot_username}?start={selected_campaign['tag']}"
+                hourly_stats = await get_campaign_hourly_stats(cid, hours=hours)
+                matching = next((item for item in campaigns if item["id"] == cid), None)
+                if matching:
+                    selected_campaign_metrics = {
+                        "purchases": matching.get("purchases", 0),
+                        "revenue": str(matching.get("revenue", "0.00")),
+                    }
+
+        return await self.templates.TemplateResponse(
+            request,
+            "traffic.html",
+            {
+                "campaigns": campaigns,
+                "selected_campaign": selected_campaign,
+                "selected_campaign_link": selected_campaign_link,
+                "selected_campaign_metrics": selected_campaign_metrics,
+                "hourly_stats": hourly_stats,
+                "hours": hours,
+                "error": error,
+                "result": result,
+                "currency": str(getattr(EnvKeys, "PAY_CURRENCY", "RUB") or "RUB"),
+            },
+        )
+
+
 # Model Views
 class UserAdmin(AuditModelView, model=User):
     required_perm = Permission.USERS_MANAGE
@@ -3453,6 +3573,7 @@ def create_admin_app(bot: Any = None) -> Starlette:
     admin.add_view(ExpensesView)
     admin.add_view(FinanceView)
     admin.add_view(ProcurementControlView)
+    admin.add_view(TrafficCampaignView)
 
     # Async RBAC enforcement (sqladmin calls is_accessible WITHOUT await, so
     # the mixin above is menu cosmetics only — this middleware is the lock).

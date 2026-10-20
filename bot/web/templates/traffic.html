@@ -1,0 +1,246 @@
+{% extends "sqladmin/layout.html" %}
+{% block head %}
+<style>
+  .traffic-bar-track { min-height: 24px; background: var(--tblr-bg-surface-secondary); border-radius: 4px; overflow: hidden; position: relative; }
+  .traffic-bar { min-height: 24px; background: linear-gradient(90deg, var(--tblr-primary) 0%, #206bc4 100%); border-radius: 4px; transition: width 0.3s ease; }
+  .traffic-bar-new { min-height: 24px; background: #2fb344; border-radius: 4px 0 0 4px; }
+  .traffic-hour-row { display: grid; grid-template-columns: 56px 1fr 110px; gap: .75rem; align-items: center; margin-bottom: .45rem; }
+  .traffic-number { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600; }
+  .copy-btn:hover { background-color: var(--tblr-primary); color: #fff !important; }
+</style>
+<script>
+function copyLink(elementId, btn) {
+  const input = document.getElementById(elementId);
+  if (!input) return;
+  navigator.clipboard.writeText(input.value).then(() => {
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '✓ Скопировано';
+    btn.classList.remove('btn-outline-primary');
+    btn.classList.add('btn-success');
+    setTimeout(() => {
+      btn.innerHTML = originalText;
+      btn.classList.remove('btn-success');
+      btn.classList.add('btn-outline-primary');
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="col-12">
+  <div class="card">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+          <h2 class="mb-1">📈 Закупы рекламы (Трафик)</h2>
+          <div class="text-muted">Отслеживание рекламных кампаний, конверсии и почасового притока пользователей</div>
+        </div>
+        <div>
+          <a class="btn btn-primary" href="#create-campaign-card">➕ Создать новый закуп</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if error %}
+<div class="col-12"><div class="alert alert-danger" role="alert">{{ error }}</div></div>
+{% endif %}
+{% if result %}
+<div class="col-12"><div class="alert alert-success" role="status">{{ result }}</div></div>
+{% endif %}
+
+<!-- Форма создания нового закупа -->
+<div class="col-12" id="create-campaign-card">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Создать ссылку для закупки рекламы</h3></div>
+    <div class="card-body">
+      <form method="POST" class="row g-3">
+        <input type="hidden" name="action" value="create">
+        <div class="col-md-6">
+          <label class="form-label" for="campaign_name">Название закупа / Источник <span class="text-danger">*</span></label>
+          <input class="form-control" name="name" id="campaign_name" type="text" placeholder="Например: Канал Новости или @major_tg" required>
+          <div class="form-hint">Укажите название канала, блогера или поста, где покупаете рекламу.</div>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="campaign_tag">Свой тег (необязательно)</label>
+          <input class="form-control" name="tag" id="campaign_tag" type="text" placeholder="например: novosti_tg">
+          <div class="form-hint">Если не указать, тег сформируется автоматически.</div>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+          <button class="btn btn-primary w-100" type="submit">Сгенерировать ссылку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Детальный просмотр выбранной кампании с диаграммой -->
+{% if selected_campaign %}
+<div class="col-12">
+  <div class="card border-primary">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="card-title">
+        📊 Детальная статистика закупа: <b>{{ selected_campaign.name }}</b>
+      </h3>
+      <div class="btn-group" role="group">
+        <a class="btn btn-sm {% if hours == 12 %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?campaign_id={{ selected_campaign.id }}&hours=12">12 часов</a>
+        <a class="btn btn-sm {% if hours == 24 %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?campaign_id={{ selected_campaign.id }}&hours=24">24 часа</a>
+        <a class="btn btn-sm {% if hours == 48 %}btn-primary{% else %}btn-outline-secondary{% endif %}" href="?campaign_id={{ selected_campaign.id }}&hours=48">48 часов</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="mb-4">
+        <label class="form-label">Рекламная ссылка для перехода в бота:</label>
+        <div class="input-group">
+          <input type="text" class="form-control font-monospace" id="selected_link_val" value="{{ selected_campaign_link }}" readonly>
+          <button class="btn btn-outline-primary copy-btn" type="button" onclick="copyLink('selected_link_val', this)">📋 Скопировать ссылку</button>
+        </div>
+      </div>
+
+      <!-- Плашки с ключевыми показателями -->
+      <div class="row row-cards mb-4">
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="subheader">Всего переходов</div>
+              <div class="h1 mb-0">{{ hourly_stats.total_clicks }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="subheader">Новых пользователей</div>
+              <div class="h1 mb-0 text-success">+{{ hourly_stats.new_users }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="subheader">Покупок от пришедших</div>
+              <div class="h1 mb-0">{{ selected_campaign_metrics.purchases }} шт.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="card card-sm">
+            <div class="card-body">
+              <div class="subheader">Выручка от закупа</div>
+              <div class="h1 mb-0 text-primary">{{ selected_campaign_metrics.revenue }} {{ currency }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Почасовая диаграмма -->
+      <h4>📈 Почасовая диаграмма переходов (за последние {{ hours }} ч.)</h4>
+      <p class="text-muted small">Время указано по МСК (UTC+3). В скобках показано число новых пользователей.</p>
+
+      {% if hourly_stats.hourly_data %}
+      <div class="p-3 bg-body-tertiary rounded border">
+        {% set max_clicks = 1 %}
+        {% for h in hourly_stats.hourly_data %}
+          {% if h.clicks > max_clicks %}{% set max_clicks = h.clicks %}{% endif %}
+        {% endfor %}
+
+        {% for item in hourly_stats.hourly_data %}
+        <div class="traffic-hour-row">
+          <div class="text-muted small">{{ item.hour }}</div>
+          <div class="traffic-bar-track">
+            {% if item.clicks > 0 %}
+            {% set bar_width = (item.clicks / max_clicks * 100)|round|int %}
+            <div class="traffic-bar" style="width: {{ bar_width }}%;"></div>
+            {% endif %}
+          </div>
+          <div class="traffic-number text-end">
+            {% if item.clicks > 0 %}
+            <span class="badge bg-primary text-white">{{ item.clicks }}</span>
+            <span class="badge bg-success text-white">+{{ item.new_users }}</span>
+            {% else %}
+            <span class="text-muted">· 0</span>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-muted">Пока нет переходов за выбранный период.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Таблица всех кампаний -->
+<div class="col-12">
+  <div class="card">
+    <div class="card-header"><h3 class="card-title">Список всех закупов ({{ campaigns|length }})</h3></div>
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table table-hover">
+        <thead>
+          <tr>
+            <th>Название</th>
+            <th>Рекламная ссылка</th>
+            <th class="text-center">Клики</th>
+            <th class="text-center">Новые юзеры</th>
+            <th class="text-center">Покупки</th>
+            <th class="text-end">Выручка</th>
+            <th class="text-center">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if campaigns %}
+          {% for c in campaigns %}
+          <tr {% if selected_campaign and selected_campaign.id == c.id %}class="table-active"{% endif %}>
+            <td>
+              <div class="fw-bold">{{ c.name }}</div>
+              <div class="text-muted small">Тег: <code>{{ c.tag }}</code> · {{ c.created_at_fmt }}</div>
+            </td>
+            <td>
+              <div class="input-group input-group-sm" style="max-width: 320px;">
+                <input type="text" class="form-control font-monospace" id="link_{{ c.id }}" value="{{ c.link }}" readonly>
+                <button class="btn btn-outline-secondary copy-btn" type="button" onclick="copyLink('link_{{ c.id }}', this)">Копировать</button>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-blue-lt font-weight-bold" style="font-size: 0.95rem;">{{ c.clicks }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-green-lt font-weight-bold" style="font-size: 0.95rem;">+{{ c.new_users }}</span>
+            </td>
+            <td class="text-center">
+              <b>{{ c.purchases }}</b>
+            </td>
+            <td class="text-end font-monospace fw-bold">
+              {{ c.revenue }} {{ currency }}
+            </td>
+            <td class="text-center">
+              <div class="btn-list flex-nowrap justify-content-center">
+                <a class="btn btn-sm btn-outline-primary" href="?campaign_id={{ c.id }}&hours=24">
+                  📊 Диаграмма
+                </a>
+                <form method="POST" style="display:inline;" onsubmit="return confirm('Удалить закуп «{{ c.name }}» и всю статистику переходов?');">
+                  <input type="hidden" name="action" value="delete">
+                  <input type="hidden" name="campaign_id" value="{{ c.id }}">
+                  <button class="btn btn-sm btn-outline-danger" type="submit">🗑</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              Закупов пока нет. Создайте первую ссылку в форме выше.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
