@@ -142,7 +142,7 @@ async def list_traffic_campaigns() -> list[dict]:
                     func.count(BoughtGoods.id),
                     func.coalesce(func.sum(BoughtGoods.price), 0),
                 )
-                .join(User, User.telegram_id == BoughtGoods.user_telegram_id)
+                .join(User, User.telegram_id == BoughtGoods.buyer_id)
                 .where(User.source_campaign_id == c.id)
             )).first()
 
