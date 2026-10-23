@@ -242,7 +242,7 @@ async def build_subscription_gate(bot, user_id: int, user: dict | None):
     markup = check_sub(
         token,
         channel_url=channel_link,
-        community_url=community_url,
+        community_url=None,
         allow_skip_community=False,
     )
     return "\n\n".join(text_parts), markup
