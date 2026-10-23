@@ -1663,6 +1663,8 @@ async def purchase_confirm_handler(call: CallbackQuery, state: FSMContext):
         (localize("btn.back"), "back_to_item"),
         (localize("btn.main_menu"), "back_to_menu"),
     ]
+    chat_url = str(getattr(EnvKeys, "COMMUNITY_CHAT_URL", "") or "").strip()
+    help_chat_line = f"\n\n{localize('shop.purchase.help_chat', url=chat_url)}" if chat_url else ""
     await edit_screen(
         call,
         localize(
@@ -1675,7 +1677,7 @@ async def purchase_confirm_handler(call: CallbackQuery, state: FSMContext):
             datetime=format_dt(purchase_data["bought_datetime"]),
             value=safe_value,
             currency=EnvKeys.PAY_CURRENCY,
-        ),
+        ) + help_chat_line,
         reply_markup=simple_buttons(buttons),
         screen="product",
         image_ref=data.get("item_image_ref"),

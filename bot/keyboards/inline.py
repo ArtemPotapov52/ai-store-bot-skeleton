@@ -60,25 +60,32 @@ def main_menu(
         else None
     )
     if support_link:
-        kb.row(InlineKeyboardButton(
+        support_btn = InlineKeyboardButton(
             text=localize("btn.support"),
             url=support_link,
             icon_custom_emoji_id=button_custom_emoji_id("support"),
-        ))
+        )
     elif (prefilled := support_prefilled_link(support_username)):
-        kb.row(InlineKeyboardButton(
+        support_btn = InlineKeyboardButton(
             text=localize("btn.support"),
             url=prefilled,
             icon_custom_emoji_id=button_custom_emoji_id("support"),
-        ))
+        )
     elif helper:
-        kb.row(InlineKeyboardButton(
+        support_btn = InlineKeyboardButton(
             text=localize("btn.support"),
             url=f"tg://user?id={helper}",
             icon_custom_emoji_id=button_custom_emoji_id("support"),
-        ))
+        )
     else:
-        kb.row(InlineKeyboardButton(text=localize("btn.support"), callback_data="support"))
+        support_btn = InlineKeyboardButton(text=localize("btn.support"), callback_data="support")
+
+    community_url = str(getattr(EnvKeys, "COMMUNITY_CHAT_URL", "") or "").strip()
+    if community_url and community_url.startswith(("https://", "tg://")):
+        community_btn = InlineKeyboardButton(text=localize("btn.community"), url=community_url)
+        kb.row(support_btn, community_btn)
+    else:
+        kb.row(support_btn)
     kb.row(InlineKeyboardButton(text=localize("btn.language"), callback_data="language"))
     kb.row(
         InlineKeyboardButton(text=localize("btn.rules"), callback_data="rules"),

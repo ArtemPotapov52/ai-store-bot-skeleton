@@ -318,6 +318,9 @@ async def cart_checkout_confirm_handler(call: CallbackQuery, state: FSMContext):
         total_disp = str(total)
         curr_disp = EnvKeys.PAY_CURRENCY
 
+    chat_url = str(getattr(EnvKeys, "COMMUNITY_CHAT_URL", "") or "").strip()
+    help_chat_line = f"\n\n{localize('shop.purchase.help_chat', url=chat_url)}" if chat_url else ""
+
     await edit_screen(
         call,
         localize(
@@ -326,7 +329,7 @@ async def cart_checkout_confirm_handler(call: CallbackQuery, state: FSMContext):
             total=total_disp,
             currency=curr_disp,
             datetime=dt,
-        ),
+        ) + help_chat_line,
         reply_markup=_receipt_keyboard(results),
         screen="cart",
     )

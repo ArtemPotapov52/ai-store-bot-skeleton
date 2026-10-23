@@ -31,7 +31,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "btn.no": "❌ Нет",
         "btn.check": "🔄 Проверить",
         "btn.check_subscription": "🔄 Проверить подписку",
-        "btn.community": "💬 Чат сообщества",
+        "btn.community": "💬 Наш чат",
         "btn.continue_without_community": "Продолжить без подписки",
         "btn.pay": "💳 Оплатить",
         "btn.check_payment": "🔄 Проверить оплату",
@@ -60,6 +60,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Выберите нужную категорию, пополните баланс при необходимости "
             "и оформите заказ в несколько нажатий."
         ),
+        "menu.chat_link": "💬 Наш чат: {url}",
         "profile.caption": "👤 <b>ПРОФИЛЬ</b>",
         "legal.title": "📄 <b>Документы магазина</b>\n\nВыберите документ, который хотите прочитать.",
         "faq.not_set": "❌ FAQ пока не заполнен",
@@ -80,6 +81,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === Subscription Flow ===
         "subscribe.prompt": "Для начала подпишитесь на новостной канал",
+        "subscribe.community_info": "💬 Наше комьюнити, где всегда помогут и розыгрыши: {url}",
         "subscribe.open_channel": "Открыть канал",
         "subscribe.community_required": "Чтобы пользоваться ботом, также необходимо вступить в чат.",
         "subscribe.community_optional": (
@@ -526,6 +528,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "shop.vpn_unavailable": "⚠️ VPN-подписка временно недоступна. Списание не выполнено.",
         "shop.purchase.success": "✅ Товар куплен. <b>Баланс</b>: <i>{balance}</i> {currency}\n\n{value}",
         "shop.purchase.receipt": "✅ Заказ успешно оформлен!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Товар: {item_name}\n💰 Цена за 1 шт.: {price} {currency}\n📦 Кол-во: {quantity} шт.\n💡 Заказ: {unique_id}\n🕐 Время: {datetime}\n💲 Итого: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Значение:\n<code>{value}</code>",
+        "shop.purchase.help_chat": "💬 Возникли вопросы или нужна помощь? Наш чат: {url}",
         "shop.purchase.processing": "⏳ Обрабатываем покупку...",
         "shop.purchase.quantity_prompt": (
             "Введите количество товара числом от <b>{min_quantity}</b> до "
@@ -759,7 +762,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "btn.no": "❌ No",
         "btn.check": "🔄 Check",
         "btn.check_subscription": "🔄 Check subscription",
-        "btn.community": "💬 Community chat",
+        "btn.community": "💬 Our chat",
         "btn.continue_without_community": "Continue without joining",
         "btn.check_payment": "🔄 Check payment",
         "btn.pay": "💳 Pay",
@@ -787,6 +790,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Welcome to <b>{shop_name}</b> 🛒\n\n"
             "Choose a category, top up your balance if needed, and place an order in a few taps."
         ),
+        "menu.chat_link": "💬 Our chat: {url}",
         "profile.caption": "👤 <b>PROFILE</b>",
         "legal.title": "📄 <b>Store documents</b>\n\nChoose a document to read.",
         "faq.not_set": "❌ FAQ has not been configured yet",
@@ -813,6 +817,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === Subscription Flow ===
         "subscribe.prompt": "First, subscribe to the news channel",
+        "subscribe.community_info": "💬 Our community for support and giveaways: {url}",
         "subscribe.open_channel": "Open channel",
         "subscribe.community_required": "You also need to join the chat to use the bot.",
         "subscribe.community_optional": (
@@ -1250,6 +1255,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "shop.vpn_unavailable": "⚠️ VPN subscription is temporarily unavailable. No charge was made.",
         "shop.purchase.success": "✅ Item purchased. <b>Balance</b>: <i>{balance}</i> {currency}\n\n{value}",
         "shop.purchase.receipt": "✅ Order placed successfully!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Item: {item_name}\n💰 Price per item: {price} {currency}\n📦 Qty: {quantity}\n💡 Order: {unique_id}\n🕐 Time: {datetime}\n💲 Total: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Value:\n<code>{value}</code>",
+        "shop.purchase.help_chat": "💬 Have questions or need help? Our chat: {url}",
         "shop.purchase.processing": "⏳ Processing the purchase...",
         "shop.purchase.quantity_prompt": (
             "Enter a whole-number quantity from <b>{min_quantity}</b> to "
@@ -1481,7 +1487,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "btn.no": "❌ Không",
         "btn.check": "🔄 Kiểm tra",
         "btn.check_subscription": "🔄 Kiểm tra đăng ký",
-        "btn.community": "💬 Nhóm cộng đồng",
+        "btn.community": "💬 Nhóm chat",
         "btn.continue_without_community": "Tiếp tục mà không tham gia",
         "btn.pay": "💳 Thanh toán",
         "btn.check_payment": "🔄 Kiểm tra thanh toán",
@@ -1510,6 +1516,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
             "Chọn danh mục bạn cần, nạp tiền nếu cần "
             "và đặt hàng chỉ với vài thao tác."
         ),
+        "menu.chat_link": "💬 Nhóm chat: {url}",
         "profile.caption": "👤 <b>HỒ SƠ</b>",
         "legal.title": "📄 <b>Tài liệu cửa hàng</b>\n\nChọn tài liệu bạn muốn đọc.",
         "faq.not_set": "❌ Chưa có FAQ",
@@ -1530,6 +1537,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 
         # === Subscription Flow ===
         "subscribe.prompt": "Để bắt đầu, hãy đăng ký kênh tin tức",
+        "subscribe.community_info": "💬 Nhóm cộng đồng hỗ trợ và quà tặng: {url}",
         "subscribe.open_channel": "Mở kênh",
         "subscribe.community_required": "Để sử dụng bot, bạn cũng cần tham gia nhóm chat.",
         "subscribe.community_optional": (
@@ -1972,6 +1980,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "shop.vpn_unavailable": "⚠️ VPN tạm thời không khả dụng. Chưa trừ tiền.",
         "shop.purchase.success": "✅ Đã mua sản phẩm. <b>Số dư</b>: <i>{balance}</i> {currency}\n\n{value}",
         "shop.purchase.receipt": "✅ Đặt hàng thành công!\n➖➖➖➖➖➖➖➖➖➖➖➖\n📃 Sản phẩm: {item_name}\n💰 Giá 1 cái.: {price} {currency}\n📦 Số lượng: {quantity} cái.\n💡 Đơn hàng: {unique_id}\n🕐 Thời gian: {datetime}\n💲 Tổng: {total} {currency}\n➖➖➖➖➖➖➖➖➖➖➖➖\n🔑 Giá trị:\n<code>{value}</code>",
+        "shop.purchase.help_chat": "💬 Bạn có thắc mắc hoặc cần hỗ trợ? Nhóm chat: {url}",
         "shop.purchase.processing": "⏳ Đang xử lý đơn mua...",
         "shop.purchase.quantity_prompt": (
             "Nhập số lượng bằng số nguyên từ <b>{min_quantity}</b> đến "

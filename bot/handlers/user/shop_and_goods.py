@@ -1119,6 +1119,9 @@ async def bought_item_info_callback_handler(call: CallbackQuery):
         localize("purchases.item.unique_id", uid=item["unique_id"]),
         localize("purchases.item.value", value=esc(item["value"])),
     ])
+    chat_url = str(getattr(EnvKeys, "COMMUNITY_CHAT_URL", "") or "").strip()
+    if chat_url:
+        text += f"\n\n{localize('shop.purchase.help_chat', url=chat_url)}"
     await edit_screen(
         call,
         text,

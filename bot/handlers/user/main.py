@@ -85,12 +85,16 @@ def _env_text(name: str, default: str = "") -> str:
 
 
 def _main_text(user) -> str:
-    return localize(
+    text = localize(
         "menu.title",
         id=user.id,
         name=_esc(user.first_name or str(user.id)),
-        shop_name=_esc(_env_text("SHOP_NAME", "Wenty_shop")),
+        shop_name=_esc(_env_text("SHOP_NAME", "My Store")),
     )
+    chat_url = str(getattr(EnvKeys, "COMMUNITY_CHAT_URL", "") or "").strip()
+    if chat_url:
+        text += f"\n\n{localize('menu.chat_link', url=chat_url)}"
+    return text
 
 
 def _main_markup(role: int, channel_username: str | None):

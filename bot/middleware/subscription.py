@@ -212,10 +212,10 @@ async def is_chat_subscribed(bot, chat_id: int | str | None, user_id: int) -> bo
 
 
 async def build_subscription_gate(bot, user_id: int, user: dict | None):
-    """Return (message, keyboard) when an update must stop at the gate.
+    """Return (message, keyboard) when an update must stop at the channel gate.
 
-    ``user`` remains in the signature for existing callers; chat membership is
-    now mandatory globally and no longer depends on per-user policy fields.
+    Only the news channel is required. If a community chat URL is configured,
+    it is linked in the message as an informational invite, not a blocking gate.
     """
     token = channel_token()
     community_url = community_chat_url()
@@ -225,32 +225,19 @@ async def build_subscription_gate(bot, user_id: int, user: dict | None):
         channel_status = await is_chat_subscribed(bot, channel_chat_id(), user_id)
     channel_blocked = bool(token) and channel_status is False
 
-    community_status = True
-    if community_url:
-        # Membership must be positively confirmed. Unknown/API-failure status
-        # stays blocked so Telegram outages cannot silently bypass the gate.
-        community_status = await is_chat_subscribed(
-            bot, community_chat_id(), user_id
-        )
-
-    community_blocked = bool(community_url and community_status is not True)
-    if not (channel_blocked or community_blocked):
+    if not channel_blocked:
         return None
 
-    channel_link = None
-    if token and (channel_blocked or community_blocked):
-        channel_link = await resolve_channel_link(
-            bot,
-            token,
-            chat_id=channel_chat_id(),
-            configured_url=EnvKeys.CHANNEL_URL,
-        )
+    channel_link = await resolve_channel_link(
+        bot,
+        token,
+        chat_id=channel_chat_id(),
+        configured_url=EnvKeys.CHANNEL_URL,
+    )
 
-    text_parts = []
-    if channel_blocked:
-        text_parts.append(localize("subscribe.prompt"))
-    if community_blocked:
-        text_parts.append(localize("subscribe.community_required"))
+    text_parts = [localize("subscribe.prompt")]
+    if community_url:
+        text_parts.append(localize("subscribe.community_info", url=community_url))
 
     markup = check_sub(
         token,
@@ -262,7 +249,7 @@ async def build_subscription_gate(bot, user_id: int, user: dict | None):
 
 
 class SubscriptionMiddleware(BaseMiddleware):
-    """Enforce configured channel and community gates for every user."""
+    """Enforce configured channel gate for every user."""
 
     async def __call__(
         self,
@@ -270,7 +257,7 @@ class SubscriptionMiddleware(BaseMiddleware):
         event: TelegramObject,
         data: dict[str, Any],
     ) -> Any:
-        if not channel_token() and not community_chat_url():
+        if not channel_token():
             return await handler(event, data)
 
         if isinstance(event, Message):
